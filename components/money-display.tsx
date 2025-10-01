@@ -55,38 +55,35 @@ export function MoneyDisplay({
 
 	return (
 		<>
-			<div className="flex items-center gap-4">
-				<div className="flex items-center gap-3 text-yellow-400">
-					{gold > 0 && (
-						<span className="flex items-center gap-2">
-							<span className="w-5 h-5 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 rounded-full border-2 border-yellow-300 shadow-lg shadow-yellow-500/30 relative">
-								<span className="absolute inset-0.5 bg-gradient-to-br from-yellow-200 to-yellow-400 rounded-full opacity-60"></span>
-								<span className="absolute inset-1 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-full opacity-40"></span>
-							</span>
-							<span className="font-semibold text-yellow-100">{gold}</span>
+			<div className="flex items-center gap-2 sm:gap-4">
+				<div className="flex items-center gap-2 sm:gap-3 text-yellow-400">
+					<span className="flex items-center gap-1 sm:gap-2">
+						<span className="w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 rounded-full border-2 border-yellow-300 shadow-lg shadow-yellow-500/30 relative">
+							<span className="absolute inset-0.5 bg-gradient-to-br from-yellow-200 to-yellow-400 rounded-full opacity-60"></span>
+							<span className="absolute inset-1 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-full opacity-40"></span>
 						</span>
-					)}
-					{silver > 0 && (
-						<span className="flex items-center gap-2">
-							<span className="w-5 h-5 bg-gradient-to-br from-gray-300 via-gray-400 to-gray-500 rounded-full border-2 border-gray-200 shadow-lg shadow-gray-400/30 relative">
-								<span className="absolute inset-0.5 bg-gradient-to-br from-gray-100 to-gray-300 rounded-full opacity-60"></span>
-								<span className="absolute inset-1 bg-gradient-to-br from-gray-200 to-gray-400 rounded-full opacity-40"></span>
-							</span>
-							<span className="font-semibold text-gray-100">{silver}</span>
+						<span className="font-semibold text-yellow-100 text-sm sm:text-base">
+							{gold}
 						</span>
-					)}
-					{copper > 0 && (
-						<span className="flex items-center gap-2">
-							<span className="w-5 h-5 bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 rounded-full border-2 border-orange-400 shadow-lg shadow-orange-600/30 relative">
-								<span className="absolute inset-0.5 bg-gradient-to-br from-orange-300 to-orange-500 rounded-full opacity-60"></span>
-								<span className="absolute inset-1 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full opacity-40"></span>
-							</span>
-							<span className="font-semibold text-orange-100">{copper}</span>
+					</span>
+					<span className="flex items-center gap-1 sm:gap-2">
+						<span className="w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-br from-gray-300 via-gray-400 to-gray-500 rounded-full border-2 border-gray-200 shadow-lg shadow-gray-400/30 relative">
+							<span className="absolute inset-0.5 bg-gradient-to-br from-gray-100 to-gray-300 rounded-full opacity-60"></span>
+							<span className="absolute inset-1 bg-gradient-to-br from-gray-200 to-gray-400 rounded-full opacity-40"></span>
 						</span>
-					)}
-					{gold === 0 && silver === 0 && copper === 0 && (
-						<span className="text-stone-500 text-sm">No money</span>
-					)}
+						<span className="font-semibold text-gray-100 text-sm sm:text-base">
+							{silver}
+						</span>
+					</span>
+					<span className="flex items-center gap-1 sm:gap-2">
+						<span className="w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 rounded-full border-2 border-orange-400 shadow-lg shadow-orange-600/30 relative">
+							<span className="absolute inset-0.5 bg-gradient-to-br from-orange-300 to-orange-500 rounded-full opacity-60"></span>
+							<span className="absolute inset-1 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full opacity-40"></span>
+						</span>
+						<span className="font-semibold text-orange-100 text-sm sm:text-base">
+							{copper}
+						</span>
+					</span>
 				</div>
 
 				{isEditable && (
@@ -94,7 +91,7 @@ export function MoneyDisplay({
 						variant="ghost"
 						size="sm"
 						onClick={() => setIsEditing(true)}
-						className="h-6 w-6 p-0 text-stone-400 hover:text-stone-200"
+						className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-stone-400 hover:text-stone-200"
 					>
 						<Edit2 className="w-3 h-3" />
 					</Button>
@@ -102,22 +99,22 @@ export function MoneyDisplay({
 			</div>
 
 			<Dialog open={isEditing} onOpenChange={setIsEditing}>
-				<DialogContent className="bg-stone-900 border-stone-700 text-stone-100">
+				<DialogContent className="bg-stone-900 border-stone-700 text-stone-100 max-w-sm sm:max-w-md">
 					<DialogHeader>
-						<DialogTitle className="text-amber-100">
+						<DialogTitle className="text-amber-100 text-sm sm:text-base">
 							Edit Guild Bank Money
 						</DialogTitle>
-						<DialogDescription className="text-stone-400">
+						<DialogDescription className="text-stone-400 text-xs sm:text-sm">
 							Enter the amount of gold, silver, and copper in the guild bank.
 						</DialogDescription>
 					</DialogHeader>
-					<div className="grid gap-4 py-4">
+					<div className="grid gap-3 sm:gap-4 py-2 sm:py-4">
 						<div className="grid gap-2">
 							<Label
 								htmlFor={goldId}
-								className="text-stone-300 flex items-center gap-2"
+								className="text-stone-300 flex items-center gap-2 text-sm"
 							>
-								<span className="w-4 h-4 bg-yellow-500 rounded-full border border-yellow-300"></span>
+								<span className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-500 rounded-full border border-yellow-300"></span>
 								Gold
 							</Label>
 							<Input
@@ -127,15 +124,15 @@ export function MoneyDisplay({
 								placeholder="0"
 								value={editGold}
 								onChange={(e) => setEditGold(e.target.value)}
-								className="bg-stone-800 border-stone-700 text-stone-100"
+								className="bg-stone-800 border-stone-700 text-stone-100 text-sm sm:text-base"
 							/>
 						</div>
 						<div className="grid gap-2">
 							<Label
 								htmlFor={silverId}
-								className="text-stone-300 flex items-center gap-2"
+								className="text-stone-300 flex items-center gap-2 text-sm"
 							>
-								<span className="w-4 h-4 bg-gray-400 rounded-full border border-gray-300"></span>
+								<span className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-400 rounded-full border border-gray-300"></span>
 								Silver
 							</Label>
 							<Input
@@ -146,15 +143,15 @@ export function MoneyDisplay({
 								placeholder="0"
 								value={editSilver}
 								onChange={(e) => setEditSilver(e.target.value)}
-								className="bg-stone-800 border-stone-700 text-stone-100"
+								className="bg-stone-800 border-stone-700 text-stone-100 text-sm sm:text-base"
 							/>
 						</div>
 						<div className="grid gap-2">
 							<Label
 								htmlFor={copperId}
-								className="text-stone-300 flex items-center gap-2"
+								className="text-stone-300 flex items-center gap-2 text-sm"
 							>
-								<span className="w-4 h-4 bg-orange-600 rounded-full border border-orange-400"></span>
+								<span className="w-3 h-3 sm:w-4 sm:h-4 bg-orange-600 rounded-full border border-orange-400"></span>
 								Copper
 							</Label>
 							<Input
@@ -165,21 +162,21 @@ export function MoneyDisplay({
 								placeholder="0"
 								value={editCopper}
 								onChange={(e) => setEditCopper(e.target.value)}
-								className="bg-stone-800 border-stone-700 text-stone-100"
+								className="bg-stone-800 border-stone-700 text-stone-100 text-sm sm:text-base"
 							/>
 						</div>
 					</div>
-					<DialogFooter className="gap-2">
+					<DialogFooter className="gap-2 flex-col sm:flex-row">
 						<Button
 							variant="outline"
 							onClick={handleCancel}
-							className="border-stone-600 text-stone-300 hover:bg-stone-800"
+							className="border-stone-600 text-stone-300 hover:bg-stone-800 text-sm sm:text-base w-full sm:w-auto"
 						>
 							Cancel
 						</Button>
 						<Button
 							onClick={handleSave}
-							className="bg-amber-600 hover:bg-amber-700 text-white"
+							className="bg-amber-600 hover:bg-amber-700 text-white text-sm sm:text-base w-full sm:w-auto"
 						>
 							Save
 						</Button>

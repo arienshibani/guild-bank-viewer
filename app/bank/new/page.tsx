@@ -8,7 +8,9 @@ import { MoneyDisplay } from "@/components/money-display";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/supabase/client";
+import { hashPassword } from "@/lib/password";
 import { Edit, Save, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -21,7 +23,11 @@ interface BankItem {
 export default function NewBankPage() {
 	const router = useRouter();
 	const bankNameId = useId();
+	const passwordId = useId();
+	const adminNotesId = useId();
 	const [bankName, setBankName] = useState("My Guild Bank");
+	const [password, setPassword] = useState("");
+	const [adminNotes, setAdminNotes] = useState("");
 	const [items, setItems] = useState<BankItem[]>([]);
 	const [gold, setGold] = useState(0);
 	const [silver, setSilver] = useState(0);
@@ -84,12 +90,17 @@ export default function NewBankPage() {
 			// Generate a random share code
 			const shareCode = Math.random().toString(36).substring(2, 10);
 
+			// Hash the password
+			const passwordHash = hashPassword(password);
+
 			// Create the guild bank
 			const { data: bankData, error: bankError } = await supabase
 				.from("guild_banks")
 				.insert({
 					name: bankName,
 					share_code: shareCode,
+					password_hash: passwordHash,
+					admin_notes: adminNotes,
 					gold,
 					silver,
 					copper,
@@ -157,6 +168,42 @@ export default function NewBankPage() {
 						className="bg-stone-800 border-stone-700 text-stone-100"
 						placeholder="Enter bank name"
 					/>
+				</div>
+
+				<div className="space-y-2">
+					<Label htmlFor={passwordId} className="text-stone-300">
+						Edit Password
+					</Label>
+					<Input
+						id={passwordId}
+						type="password"
+						value={password}
+						onChange={(e) => setPassword(e.target.value)}
+						className="bg-stone-800 border-stone-700 text-stone-100"
+						placeholder="Enter password for editing this bank"
+						required
+					/>
+					<p className="text-xs text-stone-500">
+						This password will be required to edit the bank contents. Make sure
+						to remember it!
+					</p>
+				</div>
+
+				<div className="space-y-2">
+					<Label htmlFor={adminNotesId} className="text-stone-300">
+						Notes (Optional)
+					</Label>
+					<Textarea
+						id={adminNotesId}
+						value={adminNotes}
+						onChange={(e) => setAdminNotes(e.target.value)}
+						className="bg-stone-800 border-stone-700 text-stone-100 min-h-[100px]"
+						placeholder="Add notes about this bank (e.g., bank alt name, event logs, etc.)"
+					/>
+					<p className="text-xs text-stone-500">
+						These notes are visible to everyone and can be used for tracking
+						bank alt names, event logs, or other information.
+					</p>
 				</div>
 
 				<div className="flex justify-center">

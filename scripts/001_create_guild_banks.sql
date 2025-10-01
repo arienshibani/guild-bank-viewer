@@ -3,6 +3,8 @@ create table if not exists public.guild_banks (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   share_code text unique not null,
+  password_hash text not null,
+  admin_notes text default '',
   gold integer not null default 0,
   silver integer not null default 0,
   copper integer not null default 0,

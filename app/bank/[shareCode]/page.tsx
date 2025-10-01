@@ -15,6 +15,8 @@ interface GuildBank {
 	id: string;
 	name: string;
 	share_code: string;
+	password_hash: string;
+	admin_notes: string;
 	created_at: string;
 }
 
@@ -70,6 +72,8 @@ export default async function BankViewPage({
 					shareCode={shareCode}
 					initialItems={items}
 					bankName={bank.name}
+					passwordHash={bank.password_hash}
+					initialAdminNotes={bank.admin_notes || ""}
 					initialGold={bank.gold || 0}
 					initialSilver={bank.silver || 0}
 					initialCopper={bank.copper || 0}

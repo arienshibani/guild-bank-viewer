@@ -46,33 +46,18 @@ export function BankSlot({
 		}
 
 		const fetchItemData = async () => {
-			console.log(`[BANK-SLOT] Fetching item data for itemId: ${itemId}`);
 			try {
 				const response = await fetch(`/api/item/${itemId}`);
-				console.log(`[BANK-SLOT] API response status: ${response.status}`);
 
 				if (response.ok) {
 					const data = await response.json();
-					console.log(`[BANK-SLOT] Received data for item ${itemId}:`, data);
-
 					const quality = data.quality || 0;
 					const iconName = data.iconName || null;
-
-					console.log(
-						`[BANK-SLOT] Setting quality: ${quality}, iconName: ${iconName}`,
-					);
 					setItemQuality(quality);
 					setItemIconName(iconName);
-				} else {
-					console.error(
-						`[BANK-SLOT] API error: ${response.status} ${response.statusText}`,
-					);
 				}
-			} catch (error) {
-				console.error(
-					`[BANK-SLOT] Error fetching item data for ${itemId}:`,
-					error,
-				);
+			} catch {
+				// Silently handle errors - item will just show without quality border
 			}
 		};
 
@@ -86,7 +71,7 @@ export function BankSlot({
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
 			className={cn(
-				"relative w-12 h-12 rounded border-2 transition-all",
+				"relative w-10 h-10 sm:w-12 sm:h-12 rounded border-2 transition-all",
 				"bg-gradient-to-br from-stone-800 to-stone-900",
 				hasItem && itemQuality !== null
 					? qualityBorders[itemQuality] || "border-stone-700"
@@ -107,32 +92,15 @@ export function BankSlot({
 						}
 						alt={`Item ${itemId}`}
 						className="w-full h-full rounded object-cover"
-						width={48}
-						height={48}
-						onLoad={() => {
-							const finalSrc = itemIconName
-								? `https://wow.zamimg.com/images/wow/icons/large/${itemIconName}.jpg`
-								: `https://wow.zamimg.com/images/wow/icons/large/${itemId}.jpg`;
-							console.log(
-								`[BANK-SLOT] Image loaded successfully for item ${itemId}: ${finalSrc}`,
-							);
-						}}
+						width={40}
+						height={40}
 						onError={(e) => {
-							const failedSrc = itemIconName
-								? `https://wow.zamimg.com/images/wow/icons/large/${itemIconName}.jpg`
-								: `https://wow.zamimg.com/images/wow/icons/large/${itemId}.jpg`;
-							console.error(
-								`[BANK-SLOT] Image failed to load for item ${itemId}: ${failedSrc}`,
-							);
-							console.error(
-								`[BANK-SLOT] itemIconName: ${itemIconName}, itemId: ${itemId}`,
-							);
 							// Fallback to placeholder if image fails to load
 							e.currentTarget.src = "/wow-item-icon.jpg";
 						}}
 					/>
 					{quantity && quantity > 1 && (
-						<span className="absolute bottom-0 right-0 px-1 text-xs font-bold text-white bg-black/70 rounded-tl">
+						<span className="absolute bottom-0 right-0 px-0.5 sm:px-1 text-xs font-bold text-white bg-black/70 rounded-tl">
 							{quantity}
 						</span>
 					)}
@@ -140,7 +108,7 @@ export function BankSlot({
 			)}
 			{!hasItem && (
 				<div className="w-full h-full flex items-center justify-center">
-					<div className="w-8 h-8 border border-stone-700/50 rounded" />
+					<div className="w-6 h-6 sm:w-8 sm:h-8 border border-stone-700/50 rounded" />
 				</div>
 			)}
 		</button>

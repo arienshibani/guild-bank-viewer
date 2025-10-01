@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Loader2 } from "lucide-react";
 
 interface ItemData {
@@ -50,6 +50,53 @@ export function ItemTooltip({ itemId, children }: ItemTooltipProps) {
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [showTooltip, setShowTooltip] = useState(false);
+	const [tooltipPosition, setTooltipPosition] = useState<{
+		top: boolean;
+		left: boolean;
+		transform: string;
+	}>({ top: false, left: false, transform: "translateX(-50%)" });
+
+	const tooltipRef = useRef<HTMLDivElement>(null);
+	const triggerRef = useRef<HTMLButtonElement>(null);
+
+	// Calculate tooltip position to keep it within viewport
+	useEffect(() => {
+		if (!showTooltip || !tooltipRef.current || !triggerRef.current) return;
+
+		const tooltip = tooltipRef.current;
+		const trigger = triggerRef.current;
+		const rect = trigger.getBoundingClientRect();
+		const tooltipRect = tooltip.getBoundingClientRect();
+
+		const viewportWidth = window.innerWidth;
+		const viewportHeight = window.innerHeight;
+		const margin = 8; // Minimum margin from viewport edge
+
+		// Calculate horizontal position
+		let left = false;
+		let transform = "translateX(-50%)";
+
+		// Check if tooltip would overflow on the right
+		if (rect.left + tooltipRect.width / 2 > viewportWidth - margin) {
+			left = true;
+			transform = "translateX(-100%)";
+		}
+		// Check if tooltip would overflow on the left
+		else if (rect.left - tooltipRect.width / 2 < margin) {
+			left = false;
+			transform = "translateX(0%)";
+		}
+
+		// Calculate vertical position
+		let top = false;
+
+		// Check if tooltip would overflow at the bottom
+		if (rect.bottom + tooltipRect.height + margin > viewportHeight) {
+			top = true; // Show above the trigger
+		}
+
+		setTooltipPosition({ top, left, transform });
+	}, [showTooltip]);
 
 	useEffect(() => {
 		if (!showTooltip || !itemId) return;
@@ -82,6 +129,7 @@ export function ItemTooltip({ itemId, children }: ItemTooltipProps) {
 	return (
 		<div className="relative inline-block">
 			<button
+				ref={triggerRef}
 				type="button"
 				onMouseEnter={() => setShowTooltip(true)}
 				onMouseLeave={() => setShowTooltip(false)}
@@ -91,9 +139,15 @@ export function ItemTooltip({ itemId, children }: ItemTooltipProps) {
 			</button>
 
 			{showTooltip && (
-				<div className="absolute z-50 left-1/2 -translate-x-1/2 top-full mt-2 pointer-events-none">
+				<div
+					ref={tooltipRef}
+					className={`absolute z-50 pointer-events-none ${
+						tooltipPosition.top ? "bottom-full mb-2" : "top-full mt-2"
+					} ${tooltipPosition.left ? "right-0" : "left-1/2"}`}
+					style={{ transform: tooltipPosition.transform }}
+				>
 					<div
-						className={`bg-gradient-to-b from-stone-900 to-stone-950 border-2 rounded-lg shadow-2xl p-3 min-w-[400px] max-w-[550px] ${
+						className={`bg-gradient-to-b from-stone-900 to-stone-950 border-2 rounded-lg shadow-2xl p-3 min-w-[280px] max-w-[90vw] sm:min-w-[400px] sm:max-w-[550px] ${
 							itemData
 								? qualityBorders[itemData.quality] || "border-stone-700"
 								: "border-stone-700"
@@ -110,19 +164,19 @@ export function ItemTooltip({ itemId, children }: ItemTooltipProps) {
 						{itemData && (
 							<div className="space-y-2">
 								<div
-									className={`font-bold text-base ${qualityColors[itemData.quality] || "text-white"}`}
+									className={`font-bold text-sm sm:text-base ${qualityColors[itemData.quality] || "text-white"}`}
 								>
 									{itemData.name}
 								</div>
 
 								{itemData.level && (
-									<div className="text-yellow-400 text-sm">
+									<div className="text-yellow-400 text-xs sm:text-sm">
 										Item Level {itemData.level}
 									</div>
 								)}
 
 								{itemData.category && (
-									<div className="text-stone-300 text-sm">
+									<div className="text-stone-300 text-xs sm:text-sm">
 										{itemData.category}
 									</div>
 								)}
@@ -130,7 +184,10 @@ export function ItemTooltip({ itemId, children }: ItemTooltipProps) {
 								{itemData.stats && itemData.stats.length > 0 && (
 									<div className="space-y-1">
 										{itemData.stats.map((stat) => (
-											<div key={stat} className="text-green-400 text-sm">
+											<div
+												key={stat}
+												className="text-green-400 text-xs sm:text-sm"
+											>
 												{stat}
 											</div>
 										))}
@@ -139,29 +196,29 @@ export function ItemTooltip({ itemId, children }: ItemTooltipProps) {
 
 								{itemData.description && (
 									<div
-										className="text-stone-400 text-sm italic"
+										className="text-stone-400 text-xs sm:text-sm italic"
 										dangerouslySetInnerHTML={{ __html: itemData.description }}
 									/>
 								)}
 
 								{itemData.salePrice && (
-									<div className="flex items-center gap-1 text-yellow-400 text-sm">
+									<div className="flex items-center gap-1 text-yellow-400 text-xs sm:text-sm flex-wrap">
 										<span>Sells for:</span>
 										{itemData.salePrice.gold > 0 && (
 											<span className="flex items-center gap-1">
-												<span className="w-3 h-3 bg-yellow-500 rounded-full"></span>
+												<span className="w-2 h-2 sm:w-3 sm:h-3 bg-yellow-500 rounded-full"></span>
 												{itemData.salePrice.gold}
 											</span>
 										)}
 										{itemData.salePrice.silver > 0 && (
 											<span className="flex items-center gap-1">
-												<span className="w-3 h-3 bg-gray-400 rounded-full"></span>
+												<span className="w-2 h-2 sm:w-3 sm:h-3 bg-gray-400 rounded-full"></span>
 												{itemData.salePrice.silver}
 											</span>
 										)}
 										{itemData.salePrice.copper > 0 && (
 											<span className="flex items-center gap-1">
-												<span className="w-3 h-3 bg-orange-600 rounded-full"></span>
+												<span className="w-2 h-2 sm:w-3 sm:h-3 bg-orange-600 rounded-full"></span>
 												{itemData.salePrice.copper}
 											</span>
 										)}
