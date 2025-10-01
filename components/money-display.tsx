@@ -55,24 +55,33 @@ export function MoneyDisplay({
 
 	return (
 		<>
-			<div className="flex items-center gap-2">
-				<div className="flex items-center gap-1 text-yellow-400">
+			<div className="flex items-center gap-4">
+				<div className="flex items-center gap-3 text-yellow-400">
 					{gold > 0 && (
-						<span className="flex items-center gap-1">
-							<span className="w-4 h-4 bg-yellow-500 rounded-full border border-yellow-300"></span>
-							<span className="font-semibold">{gold}</span>
+						<span className="flex items-center gap-2">
+							<span className="w-5 h-5 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 rounded-full border-2 border-yellow-300 shadow-lg shadow-yellow-500/30 relative">
+								<span className="absolute inset-0.5 bg-gradient-to-br from-yellow-200 to-yellow-400 rounded-full opacity-60"></span>
+								<span className="absolute inset-1 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-full opacity-40"></span>
+							</span>
+							<span className="font-semibold text-yellow-100">{gold}</span>
 						</span>
 					)}
 					{silver > 0 && (
-						<span className="flex items-center gap-1">
-							<span className="w-4 h-4 bg-gray-400 rounded-full border border-gray-300"></span>
-							<span className="font-semibold">{silver}</span>
+						<span className="flex items-center gap-2">
+							<span className="w-5 h-5 bg-gradient-to-br from-gray-300 via-gray-400 to-gray-500 rounded-full border-2 border-gray-200 shadow-lg shadow-gray-400/30 relative">
+								<span className="absolute inset-0.5 bg-gradient-to-br from-gray-100 to-gray-300 rounded-full opacity-60"></span>
+								<span className="absolute inset-1 bg-gradient-to-br from-gray-200 to-gray-400 rounded-full opacity-40"></span>
+							</span>
+							<span className="font-semibold text-gray-100">{silver}</span>
 						</span>
 					)}
 					{copper > 0 && (
-						<span className="flex items-center gap-1">
-							<span className="w-4 h-4 bg-orange-600 rounded-full border border-orange-400"></span>
-							<span className="font-semibold">{copper}</span>
+						<span className="flex items-center gap-2">
+							<span className="w-5 h-5 bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 rounded-full border-2 border-orange-400 shadow-lg shadow-orange-600/30 relative">
+								<span className="absolute inset-0.5 bg-gradient-to-br from-orange-300 to-orange-500 rounded-full opacity-60"></span>
+								<span className="absolute inset-1 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full opacity-40"></span>
+							</span>
+							<span className="font-semibold text-orange-100">{copper}</span>
 						</span>
 					)}
 					{gold === 0 && silver === 0 && copper === 0 && (

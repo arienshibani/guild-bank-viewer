@@ -241,26 +241,21 @@ export function BankViewer({
 			)}
 
 			<div className="space-y-4">
-				<div className="bg-stone-800 border border-stone-700 rounded-lg p-4">
-					<div className="flex items-center justify-between">
-						<h3 className="text-lg font-semibold text-amber-100">
-							Guild Bank Money
-						</h3>
-						<MoneyDisplay
-							gold={gold}
-							silver={silver}
-							copper={copper}
-							isEditable={isEditMode && isUnlocked}
-							onMoneyChange={handleMoneyChange}
-						/>
-					</div>
-				</div>
-
 				<BankGrid
 					items={items}
 					isEditMode={isEditMode && isUnlocked}
 					onSlotClick={handleSlotClick}
 				/>
+
+				<div className="flex justify-center">
+					<MoneyDisplay
+						gold={gold}
+						silver={silver}
+						copper={copper}
+						isEditable={isEditMode && isUnlocked}
+						onMoneyChange={handleMoneyChange}
+					/>
+				</div>
 			</div>
 
 			{isEditMode && isUnlocked && (

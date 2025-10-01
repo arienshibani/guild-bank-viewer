@@ -3,6 +3,8 @@ import { type NextRequest, NextResponse } from "next/server"
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ itemId: string }> }) {
   const { itemId } = await params
 
+  console.log(`[API] Fetching item data for itemId: ${itemId}`)
+
   try {
     // Fetch from Wowhead's tooltip API
     const response = await fetch(`https://nether.wowhead.com/tooltip/item/${itemId}?json`, {
@@ -12,23 +14,30 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       next: { revalidate: 3600 }, // Cache for 1 hour
     })
 
+    console.log(`[API] Wowhead response status: ${response.status}`)
+
     if (!response.ok) {
+      console.error(`[API] Wowhead API error: ${response.status} ${response.statusText}`)
       return NextResponse.json({ error: "Failed to fetch item data" }, { status: response.status })
     }
 
     const data = await response.json()
+    console.log(`[API] Raw Wowhead data for item ${itemId}:`, JSON.stringify(data, null, 2))
 
     // Parse the tooltip data to extract structured information
     const parsedData = parseWowheadTooltip(data)
+    console.log(`[API] Parsed data for item ${itemId}:`, JSON.stringify(parsedData, null, 2))
 
     return NextResponse.json(parsedData)
   } catch (error) {
-    console.error("Error fetching item data:", error)
+    console.error(`[API] Error fetching item data for ${itemId}:`, error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
 function parseWowheadTooltip(data: Record<string, unknown>) {
+  console.log(`[PARSE] Parsing Wowhead data:`, data)
+
   // Extract basic info
   const name = data.name || "Unknown Item"
   const quality = data.quality || 0
@@ -36,7 +45,17 @@ function parseWowheadTooltip(data: Record<string, unknown>) {
   const classs = data.class || null
   const subclass = data.subclass || null
   const icon = data.icon || null
-  const iconName = data.iconname || null
+  const iconName = data.icon || null
+
+  console.log(`[PARSE] Extracted fields:`, {
+    name,
+    quality,
+    level,
+    classs,
+    subclass,
+    icon,
+    iconName
+  })
 
   // Extract description (tooltip text)
   const description = data.tooltip || null

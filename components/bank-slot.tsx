@@ -46,15 +46,33 @@ export function BankSlot({
 		}
 
 		const fetchItemData = async () => {
+			console.log(`[BANK-SLOT] Fetching item data for itemId: ${itemId}`);
 			try {
 				const response = await fetch(`/api/item/${itemId}`);
+				console.log(`[BANK-SLOT] API response status: ${response.status}`);
+
 				if (response.ok) {
 					const data = await response.json();
-					setItemQuality(data.quality || 0);
-					setItemIconName(data.iconName || null);
+					console.log(`[BANK-SLOT] Received data for item ${itemId}:`, data);
+
+					const quality = data.quality || 0;
+					const iconName = data.iconName || null;
+
+					console.log(
+						`[BANK-SLOT] Setting quality: ${quality}, iconName: ${iconName}`,
+					);
+					setItemQuality(quality);
+					setItemIconName(iconName);
+				} else {
+					console.error(
+						`[BANK-SLOT] API error: ${response.status} ${response.statusText}`,
+					);
 				}
 			} catch (error) {
-				console.error("Error fetching item data:", error);
+				console.error(
+					`[BANK-SLOT] Error fetching item data for ${itemId}:`,
+					error,
+				);
 			}
 		};
 
@@ -91,7 +109,24 @@ export function BankSlot({
 						className="w-full h-full rounded object-cover"
 						width={48}
 						height={48}
+						onLoad={() => {
+							const finalSrc = itemIconName
+								? `https://wow.zamimg.com/images/wow/icons/large/${itemIconName}.jpg`
+								: `https://wow.zamimg.com/images/wow/icons/large/${itemId}.jpg`;
+							console.log(
+								`[BANK-SLOT] Image loaded successfully for item ${itemId}: ${finalSrc}`,
+							);
+						}}
 						onError={(e) => {
+							const failedSrc = itemIconName
+								? `https://wow.zamimg.com/images/wow/icons/large/${itemIconName}.jpg`
+								: `https://wow.zamimg.com/images/wow/icons/large/${itemId}.jpg`;
+							console.error(
+								`[BANK-SLOT] Image failed to load for item ${itemId}: ${failedSrc}`,
+							);
+							console.error(
+								`[BANK-SLOT] itemIconName: ${itemIconName}, itemId: ${itemId}`,
+							);
 							// Fallback to placeholder if image fails to load
 							e.currentTarget.src = "/wow-item-icon.jpg";
 						}}
