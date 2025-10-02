@@ -1,13 +1,14 @@
 "use client";
 
+import { PiggyBank, StarsIcon } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { PiggyBank, StarsIcon, Github, LinkIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { siGithub } from "simple-icons";
 import { BankGrid } from "@/components/bank-grid";
 import { MoneyDisplay } from "@/components/money-display";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const LAST_BANK_CODE_KEY = "guild-bank-viewer-last-code";
 
@@ -52,6 +53,7 @@ export default function Home() {
 	const [exampleItems, setExampleItems] = useState<
 		Array<{ slot_number: number; item_id: number; quantity: number }>
 	>([]);
+	const [isGridLoaded, setIsGridLoaded] = useState(false);
 	const router = useRouter();
 
 	// Load last entered bank code from localStorage
@@ -72,6 +74,18 @@ export default function Home() {
 		setExampleItems(itemsWithRandomSlots);
 	}, []);
 
+	// Wait for items to load their data, then fade in the grid
+	useEffect(() => {
+		if (exampleItems.length > 0) {
+			// Give items time to load their data (icons, quality, etc.)
+			const timer = setTimeout(() => {
+				setIsGridLoaded(true);
+			}, 1000); // 1 second should be enough for most items to load
+
+			return () => clearTimeout(timer);
+		}
+	}, [exampleItems]);
+
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 		if (bankCode.trim()) {
@@ -87,11 +101,10 @@ export default function Home() {
 			{/* Header Section */}
 			<div className="flex flex-col items-center justify-center p-8 pt-16">
 				<div className="max-w-2xl text-center space-y-10">
-					<div className="flex justify-center">
-						<PiggyBank className="w-24 h-24 text-amber-500" />
-					</div>
+					<div className="flex justify-center"></div>
 					<h1 className="text-5xl font-bold text-amber-100">
-						Guild Bank Viewer
+						Guild Bank Viewer{" "}
+						<PiggyBank className="inline-block w-10 h-10 ml-2" />
 					</h1>
 					<p className="text-xl text-stone-400">
 						Setup a sharable view of your guild bank contents with your
@@ -108,7 +121,7 @@ export default function Home() {
 							</Button>
 						</Link>
 
-						<p className="text-stone-400">Or</p>
+						<p className="text-stone-400">Or enter your code</p>
 
 						<div className="w-full max-w-md pt-2">
 							<form onSubmit={handleSubmit} className="flex gap-2">
@@ -136,13 +149,21 @@ export default function Home() {
 			<div className="flex flex-col items-center justify-center p-8 pb-16">
 				<div className="max-w-4xl w-full">
 					{/* Section Title */}
-					<h2 className="text-3xl font-bold text-amber-100 text-center mb-6">
+					<h2
+						className={`text-3xl font-bold text-amber-100 text-center mb-6 ${
+							isGridLoaded ? "opacity-100" : "opacity-0"
+						}`}
+					>
 						Example Guild Bank
 					</h2>
 					<div className="text-center mb-8"></div>
-					{/* Example Bank Grid */}
 
-					<div className="flex justify-center">
+					{/* Example Bank Grid with fade animation */}
+					<div
+						className={`flex justify-center transition-opacity duration-1000 ${
+							isGridLoaded ? "opacity-100" : "opacity-0"
+						}`}
+					>
 						<div className="max-w-md">
 							<BankGrid
 								items={exampleItems}
@@ -152,8 +173,12 @@ export default function Home() {
 						</div>
 					</div>
 
-					{/* Example Money Display */}
-					<div className="flex justify-center mt-6">
+					{/* Example Money Display with fade animation */}
+					<div
+						className={`flex justify-center mt-6 transition-opacity duration-1000 ${
+							isGridLoaded ? "opacity-100" : "opacity-0"
+						}`}
+					>
 						<MoneyDisplay
 							gold={1337}
 							silver={69}
@@ -163,8 +188,12 @@ export default function Home() {
 						/>
 					</div>
 
-					{/* Example Admin Notes */}
-					<div className="max-w-md mx-auto mt-6">
+					{/* Example Admin Notes with fade animation */}
+					<div
+						className={`max-w-md mx-auto mt-6 transition-opacity duration-1000 ${
+							isGridLoaded ? "opacity-100" : "opacity-0"
+						}`}
+					>
 						<div className="space-y-2">
 							<div className="text-stone-300 text-sm font-medium">
 								Example notes
@@ -176,7 +205,11 @@ export default function Home() {
 						</div>
 					</div>
 
-					<div className="text-center mt-6">
+					<div
+						className={`text-center mt-6 transition-opacity duration-1000 ${
+							isGridLoaded ? "opacity-100" : "opacity-0"
+						}`}
+					>
 						<p className="text-sm text-stone-500">
 							Hover over items to see detailed tooltips with stats,
 							descriptions, and sale prices
@@ -193,7 +226,15 @@ export default function Home() {
 				className="absolute bottom-6 right-6 p-3 bg-stone-800/80 hover:bg-stone-700/80 rounded-full border border-stone-600/50 hover:border-stone-500/50 transition-all duration-200 group"
 				aria-label="View source code on GitHub"
 			>
-				<Github className="w-5 h-5 text-stone-400 group-hover:text-stone-300 transition-colors" />
+				<svg
+					className="w-5 h-5 text-stone-400 group-hover:text-stone-300 transition-colors"
+					viewBox="0 0 24 24"
+					fill="currentColor"
+					xmlns="http://www.w3.org/2000/svg"
+				>
+					<title>GitHub</title>
+					<path d={siGithub.path} />
+				</svg>
 			</a>
 		</main>
 	);

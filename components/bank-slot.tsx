@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ItemTooltip } from "./item-tooltip";
 
@@ -22,6 +22,28 @@ const qualityBorders = [
 	"border-orange-600", // Legendary (5)
 	"border-red-600", // Artifact (6)
 	"border-yellow-600", // Heirloom (7)
+];
+
+const hoverBorders = [
+	"hover:border-white/80", // Poor (0) - white
+	"hover:border-green-400", // Common (1) - green
+	"hover:border-green-400", // Uncommon (2) - green
+	"hover:border-blue-400", // Rare (3) - blue
+	"hover:border-purple-400", // Epic (4) - purple
+	"hover:border-orange-400", // Legendary (5) - orange
+	"hover:border-red-400", // Artifact (6) - red
+	"hover:border-yellow-400", // Heirloom (7) - yellow
+];
+
+const hoverShadows = [
+	"shadow-white/30", // Poor (0) - white
+	"shadow-green-500/30", // Common (1) - green
+	"shadow-green-500/30", // Uncommon (2) - green
+	"shadow-blue-500/30", // Rare (3) - blue
+	"shadow-purple-500/30", // Epic (4) - purple
+	"shadow-orange-500/30", // Legendary (5) - orange
+	"shadow-red-500/30", // Artifact (6) - red
+	"shadow-yellow-500/30", // Heirloom (7) - yellow
 ];
 
 export function BankSlot({
@@ -76,10 +98,17 @@ export function BankSlot({
 				hasItem && itemQuality !== null
 					? qualityBorders[itemQuality] || "border-stone-700"
 					: "border-stone-700",
-				"hover:border-amber-600",
+				// Hover border based on item quality or white for empty slots
+				hasItem && itemQuality !== null
+					? hoverBorders[itemQuality] || "hover:border-white/80"
+					: "hover:border-white/80",
 				isEditMode && "cursor-pointer",
 				!isEditMode && !hasItem && "cursor-default",
-				isHovered && "shadow-lg shadow-amber-500/20",
+				// Hover shadow based on item quality or white for empty slots
+				isHovered && "shadow-lg",
+				isHovered && hasItem && itemQuality !== null
+					? hoverShadows[itemQuality] || "shadow-white/30"
+					: "shadow-white/30",
 			)}
 		>
 			{hasItem && (

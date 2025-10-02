@@ -1,15 +1,16 @@
 "use client";
 
+import { Check, Edit, Key, Lock, Save, Share2 } from "lucide-react";
 import { useState } from "react";
-import { BankGrid } from "./bank-grid";
-import { ItemEditDialog } from "./item-edit-dialog";
-import { MoneyDisplay } from "./money-display";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { hashPassword, verifyPassword } from "@/lib/password";
 import { createClient } from "@/lib/supabase/client";
-import { verifyPassword } from "@/lib/password";
-import { Edit, Save, Share2, Check, Lock } from "lucide-react";
+import { BankGrid } from "./bank-grid";
+import { ItemEditDialog } from "./item-edit-dialog";
+import { MoneyDisplay } from "./money-display";
 
 interface BankItem {
 	slot_number: number;
@@ -51,6 +52,13 @@ export function BankViewer({
 	const [password, setPassword] = useState("");
 	const [isUnlocked, setIsUnlocked] = useState(false);
 	const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+	const [newPassword, setNewPassword] = useState("");
+	const [confirmPassword, setConfirmPassword] = useState("");
+	const [showPasswordChange, setShowPasswordChange] = useState(false);
+	const [passwordError, setPasswordError] = useState("");
+	const [isChangingPassword, setIsChangingPassword] = useState(false);
+	const [unlockError, setUnlockError] = useState("");
+	const { toast } = useToast();
 
 	const shareUrl =
 		typeof window !== "undefined"
@@ -141,11 +149,18 @@ export function BankViewer({
 				if (error) throw error;
 			}
 
-			alert("Bank updated successfully!");
+			toast({
+				title: "Success",
+				description: "Bank updated successfully!",
+			});
 			setIsEditMode(false);
 		} catch (error) {
 			console.error("Error saving changes:", error);
-			alert("Failed to save changes. Please try again.");
+			toast({
+				title: "Error",
+				description: "Failed to save changes. Please try again.",
+				variant: "destructive",
+			});
 		} finally {
 			setIsSaving(false);
 		}
@@ -158,20 +173,79 @@ export function BankViewer({
 	};
 
 	const handleUnlock = () => {
+		// Clear any previous errors
+		setUnlockError("");
+
 		// Verify password against stored hash
 		if (verifyPassword(password, passwordHash)) {
 			setIsUnlocked(true);
 			setShowPasswordPrompt(false);
+			setPassword(""); // Clear password on success
 		} else {
-			alert("Incorrect password");
+			setUnlockError("Incorrect password");
+			setPassword(""); // Clear password on failure
+			toast({
+				title: "",
+				description: "Incorrect password",
+				variant: "destructive",
+			});
 		}
 	};
 
 	const handleEditModeToggle = () => {
 		if (!isEditMode && !isUnlocked) {
 			setShowPasswordPrompt(true);
+			setUnlockError(""); // Clear any previous errors when opening prompt
 		} else {
 			setIsEditMode(!isEditMode);
+		}
+	};
+
+	const handleChangePassword = async () => {
+		// Validate passwords
+		if (!newPassword.trim()) {
+			setPasswordError("New password is required");
+			return;
+		}
+		if (newPassword !== confirmPassword) {
+			setPasswordError("Passwords do not match");
+			return;
+		}
+		if (newPassword.length < 3) {
+			setPasswordError("Password must be at least 3 characters");
+			return;
+		}
+
+		setPasswordError("");
+		setIsChangingPassword(true);
+
+		try {
+			const supabase = createClient();
+			const newPasswordHash = hashPassword(newPassword);
+
+			const { error } = await supabase
+				.from("guild_banks")
+				.update({ password_hash: newPasswordHash })
+				.eq("id", bankId);
+
+			if (error) throw error;
+
+			toast({
+				title: "Success",
+				description: "Password changed successfully!",
+			});
+			setShowPasswordChange(false);
+			setNewPassword("");
+			setConfirmPassword("");
+		} catch (error) {
+			console.error("Error changing password:", error);
+			toast({
+				title: "Error",
+				description: "Failed to change password. Please try again.",
+				variant: "destructive",
+			});
+		} finally {
+			setIsChangingPassword(false);
 		}
 	};
 
@@ -231,10 +305,17 @@ export function BankViewer({
 						<Input
 							type="password"
 							value={password}
-							onChange={(e) => setPassword(e.target.value)}
+							onChange={(e) => {
+								setPassword(e.target.value);
+								if (unlockError) setUnlockError(""); // Clear error when typing
+							}}
 							onKeyDown={(e) => e.key === "Enter" && handleUnlock()}
 							placeholder="Enter password"
-							className="bg-stone-900 border-stone-700 text-stone-100"
+							className={`bg-stone-900 text-stone-100 ${
+								unlockError
+									? "border-red-500 focus:border-red-400"
+									: "border-stone-700 focus:border-stone-600"
+							}`}
 						/>
 						<Button
 							onClick={handleUnlock}
@@ -243,13 +324,18 @@ export function BankViewer({
 							Unlock
 						</Button>
 						<Button
-							onClick={() => setShowPasswordPrompt(false)}
+							onClick={() => {
+								setShowPasswordPrompt(false);
+								setUnlockError("");
+								setPassword("");
+							}}
 							variant="outline"
 							className="border-stone-700 text-stone-300"
 						>
 							Cancel
 						</Button>
 					</div>
+					{unlockError && <p className="text-xs text-red-400">{unlockError}</p>}
 					<p className="text-xs text-stone-500">
 						Enter the password set when creating this bank
 					</p>
@@ -283,18 +369,95 @@ export function BankViewer({
 				)}
 
 				{isEditMode && isUnlocked && (
-					<div className="space-y-2">
-						<div className="text-stone-300 text-sm font-medium">Edit Notes</div>
-						<Textarea
-							value={adminNotes}
-							onChange={(e) => setAdminNotes(e.target.value)}
-							className="bg-stone-800 border-stone-700 text-stone-100 min-h-[80px] sm:min-h-[100px] text-sm sm:text-base"
-							placeholder="Add notes about this bank (e.g., bank alt name, event logs, etc.)"
-						/>
-						<p className="text-xs text-stone-500">
-							These notes are visible to everyone and can be used for tracking
-							bank alt names, event logs, or other information.
-						</p>
+					<div className="space-y-4">
+						<div className="space-y-2">
+							<div className="text-stone-300 text-sm font-medium">
+								Edit Notes
+							</div>
+							<Textarea
+								value={adminNotes}
+								onChange={(e) => setAdminNotes(e.target.value)}
+								className="bg-stone-800 border-stone-700 text-stone-100 min-h-[80px] sm:min-h-[100px] text-sm sm:text-base"
+								placeholder="Add notes about this bank (e.g., bank alt name, event logs, etc.)"
+							/>
+							<p className="text-xs text-stone-500">
+								These notes are visible to everyone and can be used for tracking
+								bank alt names, event logs, or other information.
+							</p>
+						</div>
+
+						<div className="space-y-2">
+							<div className="flex items-center justify-between">
+								<div className="text-stone-300 text-sm font-medium">
+									Change Password
+								</div>
+								<Button
+									onClick={() => setShowPasswordChange(!showPasswordChange)}
+									variant="outline"
+									size="sm"
+									className="border-stone-700 text-stone-300 hover:bg-stone-800 bg-transparent"
+								>
+									<Key className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+									{showPasswordChange ? "Cancel" : "Change"}
+								</Button>
+							</div>
+
+							{showPasswordChange && (
+								<div className="bg-stone-800 border border-stone-700 rounded-lg p-3 space-y-3">
+									<div className="space-y-2">
+										<Input
+											type="password"
+											value={newPassword}
+											onChange={(e) => {
+												setNewPassword(e.target.value);
+												if (passwordError) setPasswordError("");
+											}}
+											placeholder="New password"
+											className="bg-stone-900 border-stone-700 text-stone-100"
+										/>
+										<Input
+											type="password"
+											value={confirmPassword}
+											onChange={(e) => {
+												setConfirmPassword(e.target.value);
+												if (passwordError) setPasswordError("");
+											}}
+											placeholder="Confirm new password"
+											className="bg-stone-900 border-stone-700 text-stone-100"
+										/>
+									</div>
+									{passwordError && (
+										<p className="text-xs text-red-400">{passwordError}</p>
+									)}
+									<div className="flex gap-2">
+										<Button
+											onClick={handleChangePassword}
+											disabled={isChangingPassword}
+											size="sm"
+											className="bg-amber-600 hover:bg-amber-700 text-white"
+										>
+											{isChangingPassword ? "Changing..." : "Change Password"}
+										</Button>
+										<Button
+											onClick={() => {
+												setShowPasswordChange(false);
+												setNewPassword("");
+												setConfirmPassword("");
+												setPasswordError("");
+											}}
+											variant="outline"
+											size="sm"
+											className="border-stone-700 text-stone-300"
+										>
+											Cancel
+										</Button>
+									</div>
+									<p className="text-xs text-stone-500">
+										This will change the password required to edit this bank
+									</p>
+								</div>
+							)}
+						</div>
 					</div>
 				)}
 			</div>

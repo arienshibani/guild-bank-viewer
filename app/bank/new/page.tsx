@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useId } from "react";
+import { ArrowLeft, Edit, Save } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useId, useState } from "react";
 import { BankGrid } from "@/components/bank-grid";
 import { ItemEditDialog } from "@/components/item-edit-dialog";
 import { MoneyDisplay } from "@/components/money-display";
@@ -9,10 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { createClient } from "@/lib/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { hashPassword } from "@/lib/password";
-import { Edit, Save, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 interface BankItem {
 	slot_number: number;
@@ -25,21 +26,22 @@ export default function NewBankPage() {
 	const bankNameId = useId();
 	const passwordId = useId();
 	const adminNotesId = useId();
-	const [bankName, setBankName] = useState("My Guild Bank");
+	const [bankName, setBankName] = useState("");
 	const [password, setPassword] = useState("");
 	const [adminNotes, setAdminNotes] = useState("");
 	const [items, setItems] = useState<BankItem[]>([]);
 	const [gold, setGold] = useState(0);
 	const [silver, setSilver] = useState(0);
 	const [copper, setCopper] = useState(0);
-	const [isEditMode, setIsEditMode] = useState(true);
+	// Bank creation is always in view mode - no edit mode toggle
 	const [editingSlot, setEditingSlot] = useState<number | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
+	const [passwordError, setPasswordError] = useState("");
+	const { toast } = useToast();
 
-	const handleSlotClick = (slotNumber: number) => {
-		if (isEditMode) {
-			setEditingSlot(slotNumber);
-		}
+	const handleSlotClick = (_slotNumber: number) => {
+		// During bank creation, clicking slots does nothing
+		// Users must fill out the form and save to start editing
 	};
 
 	const handleSaveItem = (
@@ -83,6 +85,14 @@ export default function NewBankPage() {
 	};
 
 	const handleSaveBank = async () => {
+		// Validate password
+		if (!password.trim()) {
+			setPasswordError("Password is required to create a bank");
+			return;
+		}
+
+		// Clear any previous errors
+		setPasswordError("");
 		setIsSaving(true);
 		try {
 			const supabase = createClient();
@@ -126,11 +136,21 @@ export default function NewBankPage() {
 				if (itemsError) throw itemsError;
 			}
 
+			// Show success toast with vault ID
+			toast({
+				title: "Vault Created Successfully!",
+				description: `Your vault ID is: ${shareCode}`,
+			});
+
 			// Redirect to the bank view page
 			router.push(`/bank/${shareCode}`);
 		} catch (error) {
 			console.error("Error saving bank:", error);
-			alert("Failed to save bank. Please try again.");
+			toast({
+				title: "Error",
+				description: "Failed to save bank. Please try again.",
+				variant: "destructive",
+			});
 		} finally {
 			setIsSaving(false);
 		}
@@ -166,27 +186,37 @@ export default function NewBankPage() {
 						value={bankName}
 						onChange={(e) => setBankName(e.target.value)}
 						className="bg-stone-800 border-stone-700 text-stone-100"
-						placeholder="Enter bank name"
+						placeholder="Enter a name (e.g. bank alt name or the name of your guild.)"
 					/>
 				</div>
 
 				<div className="space-y-2">
 					<Label htmlFor={passwordId} className="text-stone-300">
-						Edit Password
+						Password *
 					</Label>
 					<Input
 						id={passwordId}
 						type="password"
 						value={password}
-						onChange={(e) => setPassword(e.target.value)}
-						className="bg-stone-800 border-stone-700 text-stone-100"
-						placeholder="Enter password for editing this bank"
+						onChange={(e) => {
+							setPassword(e.target.value);
+							// Clear error when user starts typing
+							if (passwordError) {
+								setPasswordError("");
+							}
+						}}
+						className={`bg-stone-800 text-stone-100 ${
+							passwordError
+								? "border-red-500 focus:border-red-400"
+								: "border-stone-700 focus:border-stone-600"
+						}`}
+						placeholder="The password required to edit the contents of the bank"
 						required
 					/>
-					<p className="text-xs text-stone-500">
-						This password will be required to edit the bank contents. Make sure
-						to remember it!
-					</p>
+					{passwordError && (
+						<p className="text-xs text-red-400">{passwordError}</p>
+					)}
+					<p className="text-xs text-stone-500">Make sure you remember it!</p>
 				</div>
 
 				<div className="space-y-2">
@@ -220,25 +250,10 @@ export default function NewBankPage() {
 					<div className="flex items-center gap-2">
 						<Edit className="w-5 h-5 text-amber-500" />
 						<span className="text-stone-300">
-							{isEditMode ? "Edit Mode: Click slots to add items" : "View Mode"}
+							Fill out the form above and save to start adding items to your
+							bank.
 						</span>
 					</div>
-					<Button
-						onClick={() => setIsEditMode(!isEditMode)}
-						variant="outline"
-						className="border-stone-700 text-stone-300 hover:bg-stone-800"
-					>
-						{isEditMode ? "Exit Edit Mode" : "Enter Edit Mode"}
-					</Button>
-				</div>
-
-				<BankGrid
-					items={items}
-					isEditMode={isEditMode}
-					onSlotClick={handleSlotClick}
-				/>
-
-				<div className="flex justify-end">
 					<Button
 						onClick={handleSaveBank}
 						disabled={isSaving}
@@ -249,6 +264,12 @@ export default function NewBankPage() {
 						{isSaving ? "Saving..." : "Save & Share Bank"}
 					</Button>
 				</div>
+
+				<BankGrid
+					items={items}
+					isEditMode={false}
+					onSlotClick={handleSlotClick}
+				/>
 			</div>
 
 			<ItemEditDialog
