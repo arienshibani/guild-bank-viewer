@@ -1,6 +1,7 @@
 # 🏦 Guild Bank Viewer
 
-A modern, responsive web application for managing and sharing World of Warcraft Classic guild bank characters. Built with Next.js, Supabase, and Tailwind CSS.
+A modern, responsive web application for managing and sharing World of Warcraft Classic bank character inventory via the web. 
+Built with Next.js, Supabase, and Tailwind CSS.
 
 Check it out here 👉 [https://guild-bank-viewer.vercel.app](https://guild-bank-viewer.vercel.app)
 
