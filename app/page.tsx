@@ -64,7 +64,7 @@ export default function Home() {
 		}
 	}, []);
 
-	// Generate random example items on component mount
+	// Generate random example items on component mount for the bank preview.
 	useEffect(() => {
 		const randomSlots = generateRandomSlots(baseExampleItems.length, 20);
 		const itemsWithRandomSlots = baseExampleItems.map((item, index) => ({
