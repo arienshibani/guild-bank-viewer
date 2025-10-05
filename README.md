@@ -10,15 +10,16 @@ Check it out here 👉 [https://guild-bank-viewer.vercel.app](https://guild-bank
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 
+## 🎯 **Core Functionality**
 
-### 🎯 **Core Functionality**
 - **📦 Item Management**: Add, edit, and remove items and currency from guild bank slots
 - **🔒 Password Protection**: Secure editing with per-bank passwords
 - **📝 Admin Notes**: Public notes for bank alt names, event logs etc
 - **🔗 Shareable Links**: Easy sharing with unique bank codes
 - **⚡ Real-time Updates**: Instant synchronization across all viewers as soon as the manager makes changes.
 
-### 🛡️ **Security & Privacy**
+## 🛡️ **Security & Privacy**
+
 - **🔐 Secure Passwords**: SHA-256 hashed passwords with random salts
 - **👁️ Public Viewing**: Anyone can view with the share code
 - **✏️ Protected Editing**: Only password holders can modify contents
@@ -27,13 +28,14 @@ Check it out here 👉 [https://guild-bank-viewer.vercel.app](https://guild-bank
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 18+
 - pnpm (recommended) or npm
 - Supabase account
 
-
 ### 📁 **Project Structure**
-```
+
+```bash
 guild-bank-viewer/
 ├── app/                    # Next.js App Router
 │   ├── api/               # API routes
@@ -48,6 +50,7 @@ guild-bank-viewer/
 ```
 
 ### 🔧 **Key Technologies**
+
 - **Next.js 14**: React framework with App Router
 - **TypeScript**: Type-safe development
 - **Supabase**: Backend-as-a-Service with PostgreSQL
@@ -55,16 +58,8 @@ guild-bank-viewer/
 - **Lucide React**: Beautiful icon library
 - **Wowhead API**: WoW item data and icons
 
-
 ---
-
-<div align="center">
 
 **⭐ Star this repository if you find it useful!**
 
-Made with ❤️ for the WoW Classic community
-
 [![GitHub stars](https://img.shields.io/github/stars/arienshibani/classic-guild-bank?style=social)](https://github.com/arienshibani/classic-guild-bank/stargazers)
-
-
-</div>
