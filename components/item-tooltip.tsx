@@ -1,9 +1,8 @@
 "use client";
 
-import type React from "react";
-
-import { useEffect, useState, useRef } from "react";
 import { Loader2 } from "lucide-react";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ItemData {
 	name: string;

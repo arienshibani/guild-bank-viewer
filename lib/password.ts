@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'crypto';
+import { createHash, randomBytes } from "crypto";
 
 /**
  * Hash a password using SHA-256 with a random salt
@@ -6,9 +6,11 @@ import { createHash, randomBytes } from 'crypto';
  * @returns The hashed password with salt
  */
 export function hashPassword(password: string): string {
-    const salt = randomBytes(16).toString('hex');
-    const hash = createHash('sha256').update(password + salt).digest('hex');
-    return `${salt}:${hash}`;
+	const salt = randomBytes(16).toString("hex");
+	const hash = createHash("sha256")
+		.update(password + salt)
+		.digest("hex");
+	return `${salt}:${hash}`;
 }
 
 /**
@@ -17,10 +19,15 @@ export function hashPassword(password: string): string {
  * @param hashedPassword - The stored hash (format: salt:hash)
  * @returns True if password matches, false otherwise
  */
-export function verifyPassword(password: string, hashedPassword: string): boolean {
-    const [salt, hash] = hashedPassword.split(':');
-    if (!salt || !hash) return false;
+export function verifyPassword(
+	password: string,
+	hashedPassword: string,
+): boolean {
+	const [salt, hash] = hashedPassword.split(":");
+	if (!salt || !hash) return false;
 
-    const testHash = createHash('sha256').update(password + salt).digest('hex');
-    return testHash === hash;
+	const testHash = createHash("sha256")
+		.update(password + salt)
+		.digest("hex");
+	return testHash === hash;
 }

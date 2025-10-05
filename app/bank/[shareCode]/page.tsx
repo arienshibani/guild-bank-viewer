@@ -1,9 +1,9 @@
-import { createClient } from "@/lib/supabase/server";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BankViewer } from "@/components/bank-viewer";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
 
 interface BankItem {
 	slot_number: number;

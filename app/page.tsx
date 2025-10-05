@@ -218,6 +218,23 @@ export default function Home() {
 				</div>
 			</div>
 
+			{/* Buy Me a Coffee Button */}
+			<div className="flex justify-center pb-8">
+				<script
+					type="text/javascript"
+					src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js"
+					data-name="bmc-button"
+					data-slug="arienshibani"
+					data-color="#FFDD00"
+					data-emoji="🍺"
+					data-font="Inter"
+					data-text="Buy me a beer"
+					data-outline-color="#000000"
+					data-font-color="#000000"
+					data-coffee-color="#ffffff"
+				></script>
+			</div>
+
 			{/* GitHub Link */}
 			<a
 				href="https://github.com/arienshibani/classic-guild-bank/"
