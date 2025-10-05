@@ -185,6 +185,7 @@ export function BankViewer({
 		if (verifyPassword(password, passwordHash)) {
 			setIsUnlocked(true);
 			setShowPasswordPrompt(false);
+			setIsEditMode(true);
 			setPassword(""); // Clear password on success
 		} else {
 			setUnlockError("Incorrect password");
