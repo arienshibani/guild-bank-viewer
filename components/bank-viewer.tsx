@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Edit, Key, Lock, Save, Share2 } from "lucide-react";
+import { Check, Edit, Key, Lock, Save, Share2, Upload } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { createClient } from "@/lib/supabase/client";
 import { BankGrid } from "./bank-grid";
+import { ImportDialog } from "./import-dialog";
 import { ItemEditDialog } from "./item-edit-dialog";
 import { MoneyDisplay } from "./money-display";
 
@@ -34,6 +35,7 @@ export function BankViewer({
 	bankId,
 	shareCode,
 	initialItems,
+	bankName,
 	passwordHash,
 	initialAdminNotes = "",
 	initialGold = 0,
@@ -41,6 +43,7 @@ export function BankViewer({
 	initialCopper = 0,
 }: BankViewerProps) {
 	const [items, setItems] = useState<BankItem[]>(initialItems);
+	const [name, setName] = useState(bankName);
 	const [gold, setGold] = useState(initialGold);
 	const [silver, setSilver] = useState(initialSilver);
 	const [copper, setCopper] = useState(initialCopper);
@@ -58,6 +61,7 @@ export function BankViewer({
 	const [passwordError, setPasswordError] = useState("");
 	const [isChangingPassword, setIsChangingPassword] = useState(false);
 	const [unlockError, setUnlockError] = useState("");
+	const [showImportDialog, setShowImportDialog] = useState(false);
 	const { toast } = useToast();
 
 	const shareUrl =
@@ -120,6 +124,7 @@ export function BankViewer({
 			const { error: moneyError } = await supabase
 				.from("guild_banks")
 				.update({
+					name,
 					gold,
 					silver,
 					copper,
@@ -180,6 +185,7 @@ export function BankViewer({
 		if (verifyPassword(password, passwordHash)) {
 			setIsUnlocked(true);
 			setShowPasswordPrompt(false);
+			setIsEditMode(true);
 			setPassword(""); // Clear password on success
 		} else {
 			setUnlockError("Incorrect password");
@@ -249,6 +255,27 @@ export function BankViewer({
 		}
 	};
 
+	const handleImportItems = (importedItems: BankItem[]) => {
+		// Merge imported items with existing items, replacing any conflicts
+		const newItems = [...items];
+
+		importedItems.forEach((importedItem) => {
+			const existingIndex = newItems.findIndex(
+				(item) => item.slot_number === importedItem.slot_number,
+			);
+
+			if (existingIndex >= 0) {
+				// Replace existing item
+				newItems[existingIndex] = importedItem;
+			} else {
+				// Add new item
+				newItems.push(importedItem);
+			}
+		});
+
+		setItems(newItems);
+	};
+
 	const currentItem = items.find((item) => item.slot_number === editingSlot);
 
 	return (
@@ -282,6 +309,19 @@ export function BankViewer({
 						</span>
 						<span className="sm:hidden">{copied ? "✓" : "Share"}</span>
 					</Button>
+
+					{isEditMode && isUnlocked && (
+						<Button
+							onClick={() => setShowImportDialog(true)}
+							variant="outline"
+							size="sm"
+							className="border-stone-700 text-stone-300 hover:bg-stone-800 bg-transparent text-xs sm:text-sm"
+						>
+							<Upload className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+							<span className="hidden sm:inline">Import Items</span>
+							<span className="sm:hidden">Import</span>
+						</Button>
+					)}
 
 					<Button
 						onClick={handleEditModeToggle}
@@ -370,6 +410,20 @@ export function BankViewer({
 
 				{isEditMode && isUnlocked && (
 					<div className="space-y-4">
+						<div className="space-y-2">
+							<div className="text-stone-300 text-sm font-medium">
+								Edit Title
+							</div>
+							<Input
+								value={name}
+								onChange={(e) => setName(e.target.value)}
+								className="bg-stone-800 border-stone-700 text-stone-100 text-sm sm:text-base"
+								placeholder="Enter bank title"
+							/>
+							<p className="text-xs text-stone-500">
+								This title is shown at the top of the vault.
+							</p>
+						</div>
 						<div className="space-y-2">
 							<div className="text-stone-300 text-sm font-medium">
 								Edit Notes
@@ -483,6 +537,13 @@ export function BankViewer({
 				currentItemId={currentItem?.item_id}
 				currentQuantity={currentItem?.quantity}
 				onSave={handleSaveItem}
+			/>
+
+			<ImportDialog
+				open={showImportDialog}
+				onOpenChange={setShowImportDialog}
+				onImport={handleImportItems}
+				items={items}
 			/>
 		</div>
 	);
