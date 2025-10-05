@@ -35,6 +35,7 @@ export function BankViewer({
 	bankId,
 	shareCode,
 	initialItems,
+	bankName,
 	passwordHash,
 	initialAdminNotes = "",
 	initialGold = 0,
@@ -42,6 +43,7 @@ export function BankViewer({
 	initialCopper = 0,
 }: BankViewerProps) {
 	const [items, setItems] = useState<BankItem[]>(initialItems);
+	const [name, setName] = useState(bankName);
 	const [gold, setGold] = useState(initialGold);
 	const [silver, setSilver] = useState(initialSilver);
 	const [copper, setCopper] = useState(initialCopper);
@@ -122,6 +124,7 @@ export function BankViewer({
 			const { error: moneyError } = await supabase
 				.from("guild_banks")
 				.update({
+					name,
 					gold,
 					silver,
 					copper,
@@ -406,6 +409,20 @@ export function BankViewer({
 
 				{isEditMode && isUnlocked && (
 					<div className="space-y-4">
+						<div className="space-y-2">
+							<div className="text-stone-300 text-sm font-medium">
+								Edit Title
+							</div>
+							<Input
+								value={name}
+								onChange={(e) => setName(e.target.value)}
+								className="bg-stone-800 border-stone-700 text-stone-100 text-sm sm:text-base"
+								placeholder="Enter bank title"
+							/>
+							<p className="text-xs text-stone-500">
+								This title is shown at the top of the vault.
+							</p>
+						</div>
 						<div className="space-y-2">
 							<div className="text-stone-300 text-sm font-medium">
 								Edit Notes
