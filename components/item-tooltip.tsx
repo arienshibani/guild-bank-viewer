@@ -3,6 +3,7 @@
 import { Loader2 } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
+import type { GameMode } from "@/lib/types";
 
 interface ItemData {
 	name: string;
@@ -20,6 +21,7 @@ interface ItemData {
 interface ItemTooltipProps {
 	itemId: number;
 	children: React.ReactNode;
+	gameMode?: GameMode;
 }
 
 const qualityColors = [
@@ -44,7 +46,7 @@ const qualityBorders = [
 	"border-yellow-600", // Heirloom (7)
 ];
 
-export function ItemTooltip({ itemId, children }: ItemTooltipProps) {
+export function ItemTooltip({ itemId, children, gameMode }: ItemTooltipProps) {
 	const [itemData, setItemData] = useState<ItemData | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -105,8 +107,11 @@ export function ItemTooltip({ itemId, children }: ItemTooltipProps) {
 			setError(null);
 
 			try {
-				// Use our API route to fetch item data
-				const response = await fetch(`/api/item/${itemId}`);
+				// Use our API route to fetch item data with game mode parameter
+				const gameModeParam = gameMode
+					? `?gameMode=${encodeURIComponent(gameMode)}`
+					: "";
+				const response = await fetch(`/api/item/${itemId}${gameModeParam}`);
 
 				if (!response.ok) {
 					throw new Error("Failed to fetch item data");
@@ -123,7 +128,7 @@ export function ItemTooltip({ itemId, children }: ItemTooltipProps) {
 		};
 
 		fetchItemData();
-	}, [itemId, showTooltip]);
+	}, [itemId, showTooltip, gameMode]);
 
 	return (
 		<div className="relative inline-block">

@@ -1,5 +1,6 @@
 "use client";
 
+import type { GameMode } from "@/lib/types";
 import { BankSlot } from "./bank-slot";
 
 interface BankItem {
@@ -12,9 +13,15 @@ interface BankGridProps {
 	items: BankItem[];
 	isEditMode: boolean;
 	onSlotClick: (slotNumber: number) => void;
+	gameMode?: GameMode;
 }
 
-export function BankGrid({ items, isEditMode, onSlotClick }: BankGridProps) {
+export function BankGrid({
+	items,
+	isEditMode,
+	onSlotClick,
+	gameMode,
+}: BankGridProps) {
 	// Create a map of slot number to item for quick lookup
 	const itemMap = new Map(items.map((item) => [item.slot_number, item]));
 
@@ -40,6 +47,7 @@ export function BankGrid({ items, isEditMode, onSlotClick }: BankGridProps) {
 						quantity={slot.quantity}
 						isEditMode={isEditMode}
 						onSlotClick={onSlotClick}
+						gameMode={gameMode}
 					/>
 				))}
 			</div>

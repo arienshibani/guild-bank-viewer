@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { BankViewer } from "@/components/bank-viewer";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
+import { DEFAULT_GAME_MODE, type GameMode } from "@/lib/types";
 
 interface BankItem {
 	slot_number: number;
@@ -17,7 +18,11 @@ interface GuildBank {
 	share_code: string;
 	password_hash: string;
 	admin_notes: string;
+	game_mode: GameMode;
 	created_at: string;
+	gold: number;
+	silver: number;
+	copper: number;
 }
 
 export default async function BankViewPage({
@@ -77,6 +82,7 @@ export default async function BankViewPage({
 					initialGold={bank.gold || 0}
 					initialSilver={bank.silver || 0}
 					initialCopper={bank.copper || 0}
+					initialGameMode={(bank.game_mode as GameMode) || DEFAULT_GAME_MODE}
 				/>
 			</div>
 		</main>

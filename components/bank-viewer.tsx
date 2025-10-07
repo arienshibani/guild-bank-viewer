@@ -4,10 +4,23 @@ import { Check, Edit, Key, Lock, Save, Share2, Upload } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { createClient } from "@/lib/supabase/client";
+import {
+	DEFAULT_GAME_MODE,
+	GAME_MODE_LABELS,
+	GAME_MODES,
+	type GameMode,
+} from "@/lib/types";
 import { BankGrid } from "./bank-grid";
 import { ImportDialog } from "./import-dialog";
 import { ItemEditDialog } from "./item-edit-dialog";
@@ -29,6 +42,7 @@ interface BankViewerProps {
 	initialGold?: number;
 	initialSilver?: number;
 	initialCopper?: number;
+	initialGameMode?: GameMode;
 }
 
 export function BankViewer({
@@ -41,6 +55,7 @@ export function BankViewer({
 	initialGold = 0,
 	initialSilver = 0,
 	initialCopper = 0,
+	initialGameMode = DEFAULT_GAME_MODE,
 }: BankViewerProps) {
 	const [items, setItems] = useState<BankItem[]>(initialItems);
 	const [name, setName] = useState(bankName);
@@ -48,6 +63,7 @@ export function BankViewer({
 	const [silver, setSilver] = useState(initialSilver);
 	const [copper, setCopper] = useState(initialCopper);
 	const [adminNotes, setAdminNotes] = useState(initialAdminNotes);
+	const [gameMode, setGameMode] = useState<GameMode>(initialGameMode);
 	const [isEditMode, setIsEditMode] = useState(false);
 	const [editingSlot, setEditingSlot] = useState<number | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
@@ -129,6 +145,7 @@ export function BankViewer({
 					silver,
 					copper,
 					admin_notes: adminNotes,
+					game_mode: gameMode,
 					updated_at: new Date().toISOString(),
 				})
 				.eq("id", bankId);
@@ -387,6 +404,7 @@ export function BankViewer({
 					items={items}
 					isEditMode={isEditMode && isUnlocked}
 					onSlotClick={handleSlotClick}
+					gameMode={gameMode}
 				/>
 
 				<div className="flex justify-center">
@@ -402,7 +420,7 @@ export function BankViewer({
 				{adminNotes && (
 					<div className="space-y-2">
 						<div className="text-stone-300 text-sm font-medium">Notes</div>
-						<div className="bg-stone-800 border border-stone-700 rounded-lg p-2 sm:p-3 text-stone-100 whitespace-pre-wrap text-sm sm:text-base">
+						<div className="bg-transparent  p-2 sm:p-3 text-stone-100 whitespace-pre-wrap text-sm sm:text-base">
 							{adminNotes}
 						</div>
 					</div>
@@ -426,6 +444,35 @@ export function BankViewer({
 						</div>
 						<div className="space-y-2">
 							<div className="text-stone-300 text-sm font-medium">
+								Game Mode
+							</div>
+							<Select
+								value={gameMode}
+								onValueChange={(value: GameMode) => setGameMode(value)}
+							>
+								<SelectTrigger className="bg-stone-800 border-stone-700 text-stone-100">
+									<SelectValue placeholder="Select game mode" />
+								</SelectTrigger>
+								<SelectContent className="bg-stone-800 border-stone-700">
+									{GAME_MODES.map((mode) => (
+										<SelectItem
+											key={mode}
+											value={mode}
+											className="text-stone-100 hover:bg-stone-700"
+										>
+											{GAME_MODE_LABELS[mode]}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<p className="text-xs text-stone-500">
+								This determines which version of item tooltips will be
+								displayed.
+							</p>
+						</div>
+
+						<div className="space-y-2">
+							<div className="text-stone-300 text-sm font-medium">
 								Edit Notes
 							</div>
 							<Textarea
@@ -442,9 +489,6 @@ export function BankViewer({
 
 						<div className="space-y-2">
 							<div className="flex items-center justify-between">
-								<div className="text-stone-300 text-sm font-medium">
-									Change Password
-								</div>
 								<Button
 									onClick={() => setShowPasswordChange(!showPasswordChange)}
 									variant="outline"
@@ -452,7 +496,7 @@ export function BankViewer({
 									className="border-stone-700 text-stone-300 hover:bg-stone-800 bg-transparent"
 								>
 									<Key className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-									{showPasswordChange ? "Cancel" : "Change"}
+									{showPasswordChange ? "Cancel" : "New Password"}
 								</Button>
 							</div>
 
