@@ -1,6 +1,7 @@
 "use client";
 
 import type { GameMode } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { BankSlot } from "./bank-slot";
 
 interface BankItem {
@@ -36,7 +37,12 @@ export function BankGrid({
 	});
 
 	return (
-		<div className="relative p-3 sm:p-6 bg-gradient-to-br from-stone-800 via-stone-900 to-stone-950 rounded-lg border-2 sm:border-4 border-stone-700 shadow-2xl">
+		<div
+			className={cn(
+				"relative p-3 sm:p-6 bg-gradient-to-br from-stone-800 via-stone-900 to-stone-950 rounded-lg border-2 sm:border-4 shadow-2xl",
+				isEditMode ? "border-green-200" : "border-stone-700",
+			)}
+		>
 			<div className="absolute inset-0 bg-[url('/stone-texture.png')] opacity-5 rounded-lg" />
 			<div className="relative grid grid-cols-4 sm:grid-cols-7 gap-1 sm:gap-2">
 				{slots.map((slot) => (
