@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import type { GameMode } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ItemTooltip } from "./item-tooltip";
 
@@ -11,6 +12,7 @@ interface BankSlotProps {
 	quantity?: number;
 	isEditMode: boolean;
 	onSlotClick: (slotNumber: number) => void;
+	gameMode?: GameMode;
 }
 
 const qualityBorders = [
@@ -52,6 +54,7 @@ export function BankSlot({
 	quantity,
 	isEditMode,
 	onSlotClick,
+	gameMode,
 }: BankSlotProps) {
 	const [isHovered, setIsHovered] = useState(false);
 	const [itemQuality, setItemQuality] = useState<number | null>(null);
@@ -69,7 +72,10 @@ export function BankSlot({
 
 		const fetchItemData = async () => {
 			try {
-				const response = await fetch(`/api/item/${itemId}`);
+				const gameModeParam = gameMode
+					? `?gameMode=${encodeURIComponent(gameMode)}`
+					: "";
+				const response = await fetch(`/api/item/${itemId}${gameModeParam}`);
 
 				if (response.ok) {
 					const data = await response.json();
@@ -84,7 +90,7 @@ export function BankSlot({
 		};
 
 		fetchItemData();
-	}, [itemId]);
+	}, [itemId, gameMode]);
 
 	const slotContent = (
 		<button
@@ -144,7 +150,11 @@ export function BankSlot({
 	);
 
 	if (hasItem && itemId) {
-		return <ItemTooltip itemId={itemId}>{slotContent}</ItemTooltip>;
+		return (
+			<ItemTooltip itemId={itemId} gameMode={gameMode}>
+				{slotContent}
+			</ItemTooltip>
+		);
 	}
 
 	return slotContent;

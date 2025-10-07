@@ -1,22 +1,41 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { DEFAULT_GAME_MODE, type GameMode } from "@/lib/types";
 
 export async function GET(
-	_request: NextRequest,
+	request: NextRequest,
 	{ params }: { params: Promise<{ itemId: string }> },
 ) {
 	const { itemId } = await params;
+	const { searchParams } = new URL(request.url);
+	const gameModeParam = searchParams.get("gameMode");
+	const gameMode: GameMode = (gameModeParam as GameMode) || DEFAULT_GAME_MODE;
 
 	try {
+		// Determine the correct tooltip endpoint based on game mode
+		let tooltipUrl: string;
+		switch (gameMode) {
+			case "classic":
+				tooltipUrl = `https://nether.wowhead.com/classic/tooltip/item/${itemId}?json`;
+				break;
+			case "wotlk":
+				tooltipUrl = `https://nether.wowhead.com/wotlk/tooltip/item/${itemId}?json`;
+				break;
+			case "cata":
+				tooltipUrl = `https://nether.wowhead.com/cata/tooltip/item/${itemId}?json`;
+				break;
+			default:
+				// Default to retail (retail value or any other value)
+				tooltipUrl = `https://nether.wowhead.com/tooltip/item/${itemId}?json`;
+				break;
+		}
+
 		// Fetch from Wowhead's tooltip API
-		const response = await fetch(
-			`https://nether.wowhead.com/tooltip/item/${itemId}?json`,
-			{
-				headers: {
-					"User-Agent": "Mozilla/5.0 (compatible; GuildBankViewer/1.0)",
-				},
-				next: { revalidate: 3600 }, // Cache for 1 hour
+		const response = await fetch(tooltipUrl, {
+			headers: {
+				"User-Agent": "Mozilla/5.0 (compatible; GuildBankViewer/1.0)",
 			},
-		);
+			next: { revalidate: 3600 }, // Cache for 1 hour
+		});
 
 		if (!response.ok) {
 			return NextResponse.json(

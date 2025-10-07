@@ -35,9 +35,12 @@ const baseExampleItems = [
 	{ item_id: 16204, quantity: 20 }, // enchanting stuff
 ];
 
-// randomly remove 6 items from the above list to simulate a more realistic bank
-
-baseExampleItems.splice(Math.floor(Math.random() * baseExampleItems.length), 6);
+// Function to randomly remove items from the list to simulate a more realistic bank
+const getRandomizedItems = () => {
+	const items = [...baseExampleItems];
+	items.splice(Math.floor(Math.random() * items.length), 6);
+	return items;
+};
 
 // Function to generate random slot numbers
 const generateRandomSlots = (itemCount: number, maxSlot: number = 20) => {
@@ -58,16 +61,19 @@ export default function Home() {
 
 	// Load last entered bank code from localStorage
 	useEffect(() => {
-		const lastCode = localStorage.getItem(LAST_BANK_CODE_KEY);
-		if (lastCode) {
-			setBankCode(lastCode);
+		if (typeof window !== "undefined") {
+			const lastCode = localStorage.getItem(LAST_BANK_CODE_KEY);
+			if (lastCode) {
+				setBankCode(lastCode);
+			}
 		}
 	}, []);
 
 	// Generate random example items on component mount for the bank preview.
 	useEffect(() => {
-		const randomSlots = generateRandomSlots(baseExampleItems.length, 20);
-		const itemsWithRandomSlots = baseExampleItems.map((item, index) => ({
+		const randomizedItems = getRandomizedItems();
+		const randomSlots = generateRandomSlots(randomizedItems.length, 20);
+		const itemsWithRandomSlots = randomizedItems.map((item, index) => ({
 			...item,
 			slot_number: randomSlots[index],
 		}));
@@ -90,7 +96,9 @@ export default function Home() {
 		e.preventDefault();
 		if (bankCode.trim()) {
 			// Save the bank code to localStorage
-			localStorage.setItem(LAST_BANK_CODE_KEY, bankCode.trim());
+			if (typeof window !== "undefined") {
+				localStorage.setItem(LAST_BANK_CODE_KEY, bankCode.trim());
+			}
 			// Navigate to the bank page
 			router.push(`/bank/${bankCode.trim()}`);
 		}

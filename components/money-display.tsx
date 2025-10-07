@@ -38,9 +38,9 @@ export function MoneyDisplay({
 	const [editCopper, setEditCopper] = useState(copper.toString());
 
 	const handleSave = () => {
-		const newGold = Math.max(0, parseInt(editGold) || 0);
-		const newSilver = Math.max(0, Math.min(99, parseInt(editSilver) || 0));
-		const newCopper = Math.max(0, Math.min(99, parseInt(editCopper) || 0));
+		const newGold = Math.max(0, parseInt(editGold, 10) || 0);
+		const newSilver = Math.max(0, Math.min(99, parseInt(editSilver, 10) || 0));
+		const newCopper = Math.max(0, Math.min(99, parseInt(editCopper, 10) || 0));
 
 		onMoneyChange?.(newGold, newSilver, newCopper);
 		setIsEditing(false);
@@ -56,34 +56,27 @@ export function MoneyDisplay({
 	return (
 		<>
 			<div className="flex items-center gap-2 sm:gap-4">
-				<div className="flex items-center gap-2 sm:gap-3 text-yellow-400">
-					<span className="flex items-center gap-1 sm:gap-2">
-						<span className="w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 rounded-full border-2 border-yellow-300 shadow-lg shadow-yellow-500/30 relative">
-							<span className="absolute inset-0.5 bg-gradient-to-br from-yellow-200 to-yellow-400 rounded-full opacity-60"></span>
-							<span className="absolute inset-1 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-full opacity-40"></span>
-						</span>
-						<span className="font-semibold text-yellow-100 text-sm sm:text-base">
+				<div className="flex items-center gap-2 sm:gap-3">
+					{gold > 0 && (
+						<span className="moneygold font-semibold text-yellow-100 text-sm sm:text-base">
 							{gold}
 						</span>
-					</span>
-					<span className="flex items-center gap-1 sm:gap-2">
-						<span className="w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-br from-gray-300 via-gray-400 to-gray-500 rounded-full border-2 border-gray-200 shadow-lg shadow-gray-400/30 relative">
-							<span className="absolute inset-0.5 bg-gradient-to-br from-gray-100 to-gray-300 rounded-full opacity-60"></span>
-							<span className="absolute inset-1 bg-gradient-to-br from-gray-200 to-gray-400 rounded-full opacity-40"></span>
-						</span>
-						<span className="font-semibold text-gray-100 text-sm sm:text-base">
+					)}
+					{silver > 0 && (
+						<span className="moneysilver font-semibold text-gray-100 text-sm sm:text-base">
 							{silver}
 						</span>
-					</span>
-					<span className="flex items-center gap-1 sm:gap-2">
-						<span className="w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 rounded-full border-2 border-orange-400 shadow-lg shadow-orange-600/30 relative">
-							<span className="absolute inset-0.5 bg-gradient-to-br from-orange-300 to-orange-500 rounded-full opacity-60"></span>
-							<span className="absolute inset-1 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full opacity-40"></span>
-						</span>
-						<span className="font-semibold text-orange-100 text-sm sm:text-base">
+					)}
+					{copper > 0 && (
+						<span className="moneycopper font-semibold text-orange-100 text-sm sm:text-base">
 							{copper}
 						</span>
-					</span>
+					)}
+					{gold === 0 && silver === 0 && copper === 0 && (
+						<span className="text-stone-400 text-sm sm:text-base">
+							No money
+						</span>
+					)}
 				</div>
 
 				{isEditable && (
@@ -114,8 +107,9 @@ export function MoneyDisplay({
 								htmlFor={goldId}
 								className="text-stone-300 flex items-center gap-2 text-sm"
 							>
-								<span className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-500 rounded-full border border-yellow-300"></span>
-								Gold
+								<span className="moneygold text-yellow-100 font-semibold">
+									Gold
+								</span>
 							</Label>
 							<Input
 								id={goldId}
@@ -132,8 +126,9 @@ export function MoneyDisplay({
 								htmlFor={silverId}
 								className="text-stone-300 flex items-center gap-2 text-sm"
 							>
-								<span className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-400 rounded-full border border-gray-300"></span>
-								Silver
+								<span className="moneysilver text-gray-100 font-semibold">
+									Silver
+								</span>
 							</Label>
 							<Input
 								id={silverId}
@@ -151,8 +146,9 @@ export function MoneyDisplay({
 								htmlFor={copperId}
 								className="text-stone-300 flex items-center gap-2 text-sm"
 							>
-								<span className="w-3 h-3 sm:w-4 sm:h-4 bg-orange-600 rounded-full border border-orange-400"></span>
-								Copper
+								<span className="moneycopper text-orange-100 font-semibold">
+									Copper
+								</span>
 							</Label>
 							<Input
 								id={copperId}

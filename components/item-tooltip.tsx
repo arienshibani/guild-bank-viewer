@@ -1,8 +1,10 @@
+/** biome-ignore-all lint/security/noDangerouslySetInnerHtml: Necessary evil. */
 "use client";
 
 import { Loader2 } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
+import type { GameMode } from "@/lib/types";
 
 interface ItemData {
 	name: string;
@@ -20,18 +22,8 @@ interface ItemData {
 interface ItemTooltipProps {
 	itemId: number;
 	children: React.ReactNode;
+	gameMode?: GameMode;
 }
-
-const qualityColors = [
-	"text-gray-400", // Poor (0)
-	"text-white", // Common (1)
-	"text-green-400", // Uncommon (2)
-	"text-blue-400", // Rare (3)
-	"text-purple-400", // Epic (4)
-	"text-orange-400", // Legendary (5)
-	"text-red-400", // Artifact (6)
-	"text-yellow-400", // Heirloom (7)
-];
 
 const qualityBorders = [
 	"border-gray-600", // Poor (0)
@@ -44,7 +36,80 @@ const qualityBorders = [
 	"border-yellow-600", // Heirloom (7)
 ];
 
-export function ItemTooltip({ itemId, children }: ItemTooltipProps) {
+// Process tooltip HTML to add WoW-like styling and structure
+function processTooltipHTML(html: string): string {
+	let processedHTML = html;
+
+	// Add base CSS styles for WoW-like appearance
+	const baseStyles = `
+		<style>
+			.wow-tooltip { color: #fff; }
+			.wow-tooltip table { width: 100%; border-collapse: collapse; }
+			.wow-tooltip td { padding: 0; vertical-align: top; color: #fff; }
+			.wow-tooltip th { text-align: right; padding: 0; color: #fff; }
+			.wow-tooltip .q3 { color: #0070dd; font-weight: bold; }
+			.wow-tooltip .q2 { color: #1eff00; }
+			.wow-tooltip .q1 { color: #fff; }
+			.wow-tooltip .q { color: #ffd100; }
+			.wow-tooltip .whtt-sellprice { color: #fff; }
+			.wow-tooltip a { color: #1eff00; text-decoration: none; }
+			.wow-tooltip a:hover { text-decoration: underline; }
+			.wow-tooltip span:not(.q):not(.q1):not(.q2):not(.q3) { color: #fff; }
+			.wow-tooltip .max-stack { color: #9d9d9d !important; }
+		</style>
+	`;
+
+	// Wrap the content in a WoW tooltip container
+	processedHTML = `<div class="wow-tooltip">${processedHTML}</div>`;
+
+	// Style item level text with WoW yellow color
+	processedHTML = processedHTML.replace(
+		/Item Level <!--ilvl-->(\d+)/g,
+		'<span class="q">Item Level $1</span>',
+	);
+
+	// Style on-hit effects and similar green text with WoW green color
+	processedHTML = processedHTML.replace(
+		/<span id="useText\d+" class="q2">([^<]*(?:<[^>]*>[^<]*<\/[^>]*>[^<]*)*)<\/span>/g,
+		'<span class="q2">$1</span>',
+	);
+
+	// Add currency icons to money values
+	// Replace moneysilver spans with icon + value
+	processedHTML = processedHTML.replace(
+		/<span class="moneysilver">(\d+)<\/span>/g,
+		'<span class="inline-flex items-center gap-1"><img src="/images/icons/money-silver.gif" alt="Silver" class="w-3 h-3" />$1</span>',
+	);
+
+	// Replace moneycopper spans with icon + value
+	processedHTML = processedHTML.replace(
+		/<span class="moneycopper">(\d+)<\/span>/g,
+		'<span class="inline-flex items-center gap-1"><img src="/images/icons/money-copper.gif" alt="Copper" class="w-3 h-3" />$1</span>',
+	);
+
+	// Replace moneygold spans with icon + value (if they exist)
+	processedHTML = processedHTML.replace(
+		/<span class="moneygold">(\d+)<\/span>/g,
+		'<span class="inline-flex items-center gap-1"><img src="/images/icons/money-gold.gif" alt="Gold" class="w-3 h-3" />$1</span>',
+	);
+
+	// Style Max Stack text with gray color
+	processedHTML = processedHTML.replace(
+		/>([^<]*Max Stack[^<]*)</g,
+		'><span class="max-stack">$1</span><',
+	);
+
+	// Remove the outer table structure that we don't need for our layout
+	processedHTML = processedHTML.replace(/^<tbody><tr><td>/, "");
+	processedHTML = processedHTML.replace(
+		/<\/td><th[^>]*><\/th><\/tr><tr><th[^>]*><\/th><th[^>]*><\/th><\/tr><\/tbody>$/,
+		"",
+	);
+
+	return baseStyles + processedHTML;
+}
+
+export function ItemTooltip({ itemId, children, gameMode }: ItemTooltipProps) {
 	const [itemData, setItemData] = useState<ItemData | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -54,13 +119,20 @@ export function ItemTooltip({ itemId, children }: ItemTooltipProps) {
 		left: boolean;
 		transform: string;
 	}>({ top: false, left: false, transform: "translateX(-50%)" });
+	const [isClient, setIsClient] = useState(false);
 
 	const tooltipRef = useRef<HTMLDivElement>(null);
 	const triggerRef = useRef<HTMLButtonElement>(null);
 
+	// Set client-side flag
+	useEffect(() => {
+		setIsClient(true);
+	}, []);
+
 	// Calculate tooltip position to keep it within viewport
 	useEffect(() => {
-		if (!showTooltip || !tooltipRef.current || !triggerRef.current) return;
+		if (!showTooltip || !tooltipRef.current || !triggerRef.current || !isClient)
+			return;
 
 		const tooltip = tooltipRef.current;
 		const trigger = triggerRef.current;
@@ -95,7 +167,7 @@ export function ItemTooltip({ itemId, children }: ItemTooltipProps) {
 		}
 
 		setTooltipPosition({ top, left, transform });
-	}, [showTooltip]);
+	}, [showTooltip, isClient]);
 
 	useEffect(() => {
 		if (!showTooltip || !itemId) return;
@@ -105,8 +177,11 @@ export function ItemTooltip({ itemId, children }: ItemTooltipProps) {
 			setError(null);
 
 			try {
-				// Use our API route to fetch item data
-				const response = await fetch(`/api/item/${itemId}`);
+				// Use our API route to fetch item data with game mode parameter
+				const gameModeParam = gameMode
+					? `?gameMode=${encodeURIComponent(gameMode)}`
+					: "";
+				const response = await fetch(`/api/item/${itemId}${gameModeParam}`);
 
 				if (!response.ok) {
 					throw new Error("Failed to fetch item data");
@@ -123,7 +198,7 @@ export function ItemTooltip({ itemId, children }: ItemTooltipProps) {
 		};
 
 		fetchItemData();
-	}, [itemId, showTooltip]);
+	}, [itemId, showTooltip, gameMode]);
 
 	return (
 		<div className="relative inline-block">
@@ -141,9 +216,13 @@ export function ItemTooltip({ itemId, children }: ItemTooltipProps) {
 				<div
 					ref={tooltipRef}
 					className={`absolute z-50 pointer-events-none ${
-						tooltipPosition.top ? "bottom-full mb-2" : "top-full mt-2"
-					} ${tooltipPosition.left ? "right-0" : "left-1/2"}`}
-					style={{ transform: tooltipPosition.transform }}
+						isClient && tooltipPosition.top
+							? "bottom-full mb-2"
+							: "top-full mt-2"
+					} ${isClient && tooltipPosition.left ? "right-0" : "left-1/2"}`}
+					style={
+						isClient ? { transform: tooltipPosition.transform } : undefined
+					}
 				>
 					<div
 						className={`bg-gradient-to-b from-stone-900 to-stone-950 border-2 rounded-lg shadow-2xl p-3 min-w-[280px] max-w-[90vw] sm:min-w-[400px] sm:max-w-[550px] ${
@@ -161,72 +240,13 @@ export function ItemTooltip({ itemId, children }: ItemTooltipProps) {
 						{error && <div className="text-red-400 text-sm">{error}</div>}
 
 						{itemData && (
-							<div className="space-y-2">
+							<div className="text-xs sm:text-sm">
+								{/* Main tooltip content using WoW-like structure */}
 								<div
-									className={`font-bold text-sm sm:text-base ${qualityColors[itemData.quality] || "text-white"}`}
-								>
-									{itemData.name}
-								</div>
-
-								{itemData.level && (
-									<div className="text-yellow-400 text-xs sm:text-sm">
-										Item Level {itemData.level}
-									</div>
-								)}
-
-								{itemData.category && (
-									<div className="text-stone-300 text-xs sm:text-sm">
-										{itemData.category}
-									</div>
-								)}
-
-								{itemData.stats && itemData.stats.length > 0 && (
-									<div className="space-y-1">
-										{itemData.stats.map((stat) => (
-											<div
-												key={stat}
-												className="text-green-400 text-xs sm:text-sm"
-											>
-												{stat}
-											</div>
-										))}
-									</div>
-								)}
-
-								{itemData.description && (
-									<div
-										className="text-stone-400 text-xs sm:text-sm italic"
-										dangerouslySetInnerHTML={{ __html: itemData.description }}
-									/>
-								)}
-
-								{itemData.salePrice && (
-									<div className="flex items-center gap-1 text-yellow-400 text-xs sm:text-sm flex-wrap">
-										<span>Sells for:</span>
-										{itemData.salePrice.gold > 0 && (
-											<span className="flex items-center gap-1">
-												<span className="w-2 h-2 sm:w-3 sm:h-3 bg-yellow-500 rounded-full"></span>
-												{itemData.salePrice.gold}
-											</span>
-										)}
-										{itemData.salePrice.silver > 0 && (
-											<span className="flex items-center gap-1">
-												<span className="w-2 h-2 sm:w-3 sm:h-3 bg-gray-400 rounded-full"></span>
-												{itemData.salePrice.silver}
-											</span>
-										)}
-										{itemData.salePrice.copper > 0 && (
-											<span className="flex items-center gap-1">
-												<span className="w-2 h-2 sm:w-3 sm:h-3 bg-orange-600 rounded-full"></span>
-												{itemData.salePrice.copper}
-											</span>
-										)}
-									</div>
-								)}
-
-								<div className="text-xs text-stone-500 pt-1 border-t border-stone-700 mt-2">
-									Item ID: {itemId}
-								</div>
+									dangerouslySetInnerHTML={{
+										__html: processTooltipHTML(itemData.description || ""),
+									}}
+								/>
 							</div>
 						)}
 					</div>

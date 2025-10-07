@@ -10,10 +10,23 @@ import { MoneyDisplay } from "@/components/money-display";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { hashPassword } from "@/lib/password";
 import { createClient } from "@/lib/supabase/client";
+import {
+	DEFAULT_GAME_MODE,
+	GAME_MODE_LABELS,
+	GAME_MODES,
+	type GameMode,
+} from "@/lib/types";
 
 interface BankItem {
 	slot_number: number;
@@ -26,9 +39,11 @@ export default function NewBankPage() {
 	const bankNameId = useId();
 	const passwordId = useId();
 	const adminNotesId = useId();
+	const gameModeId = useId();
 	const [bankName, setBankName] = useState("");
 	const [password, setPassword] = useState("");
 	const [adminNotes, setAdminNotes] = useState("");
+	const [gameMode, setGameMode] = useState<GameMode>(DEFAULT_GAME_MODE);
 	const [items, setItems] = useState<BankItem[]>([]);
 	const [gold, setGold] = useState(0);
 	const [silver, setSilver] = useState(0);
@@ -111,6 +126,7 @@ export default function NewBankPage() {
 					share_code: shareCode,
 					password_hash: passwordHash,
 					admin_notes: adminNotes,
+					game_mode: gameMode,
 					gold,
 					silver,
 					copper,
@@ -220,6 +236,34 @@ export default function NewBankPage() {
 				</div>
 
 				<div className="space-y-2">
+					<Label htmlFor={gameModeId} className="text-stone-300">
+						Game Mode
+					</Label>
+					<Select
+						value={gameMode}
+						onValueChange={(value: GameMode) => setGameMode(value)}
+					>
+						<SelectTrigger className="bg-stone-800 border-stone-700 text-stone-100">
+							<SelectValue placeholder="Select game mode" />
+						</SelectTrigger>
+						<SelectContent className="bg-stone-800 border-stone-700">
+							{GAME_MODES.map((mode) => (
+								<SelectItem
+									key={mode}
+									value={mode}
+									className="text-stone-100 hover:bg-stone-700"
+								>
+									{GAME_MODE_LABELS[mode]}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+					<p className="text-xs text-stone-500">
+						This determines which version of item tooltips will be displayed.
+					</p>
+				</div>
+
+				<div className="space-y-2">
 					<Label htmlFor={adminNotesId} className="text-stone-300">
 						Notes (Optional)
 					</Label>
@@ -269,6 +313,7 @@ export default function NewBankPage() {
 					items={items}
 					isEditMode={false}
 					onSlotClick={handleSlotClick}
+					gameMode={gameMode}
 				/>
 			</div>
 

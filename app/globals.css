@@ -87,3 +87,28 @@
 		@apply bg-background text-foreground;
 	}
 }
+
+/* WoWHead-style currency icons */
+.moneygold {
+	padding-right: 15px;
+	background-image: url(/images/icons/money-gold.gif);
+	background-repeat: no-repeat;
+	background-position: right center;
+	background-size: 12px 12px;
+}
+
+.moneysilver {
+	padding-right: 15px;
+	background-image: url(/images/icons/money-silver.gif);
+	background-repeat: no-repeat;
+	background-position: right center;
+	background-size: 12px 12px;
+}
+
+.moneycopper {
+	padding-right: 15px;
+	background-image: url(/images/icons/money-copper.gif);
+	background-repeat: no-repeat;
+	background-position: right center;
+	background-size: 12px 12px;
+}

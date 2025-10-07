@@ -4,10 +4,23 @@ import { Check, Edit, Key, Lock, Save, Share2, Upload } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { createClient } from "@/lib/supabase/client";
+import {
+	DEFAULT_GAME_MODE,
+	GAME_MODE_LABELS,
+	GAME_MODES,
+	type GameMode,
+} from "@/lib/types";
 import { BankGrid } from "./bank-grid";
 import { ImportDialog } from "./import-dialog";
 import { ItemEditDialog } from "./item-edit-dialog";
@@ -29,6 +42,7 @@ interface BankViewerProps {
 	initialGold?: number;
 	initialSilver?: number;
 	initialCopper?: number;
+	initialGameMode?: GameMode;
 }
 
 export function BankViewer({
@@ -41,6 +55,7 @@ export function BankViewer({
 	initialGold = 0,
 	initialSilver = 0,
 	initialCopper = 0,
+	initialGameMode = DEFAULT_GAME_MODE,
 }: BankViewerProps) {
 	const [items, setItems] = useState<BankItem[]>(initialItems);
 	const [name, setName] = useState(bankName);
@@ -48,6 +63,7 @@ export function BankViewer({
 	const [silver, setSilver] = useState(initialSilver);
 	const [copper, setCopper] = useState(initialCopper);
 	const [adminNotes, setAdminNotes] = useState(initialAdminNotes);
+	const [gameMode, setGameMode] = useState<GameMode>(initialGameMode);
 	const [isEditMode, setIsEditMode] = useState(false);
 	const [editingSlot, setEditingSlot] = useState<number | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
@@ -62,11 +78,14 @@ export function BankViewer({
 	const [isChangingPassword, setIsChangingPassword] = useState(false);
 	const [unlockError, setUnlockError] = useState("");
 	const [showImportDialog, setShowImportDialog] = useState(false);
+	const [newShareCode, setNewShareCode] = useState(shareCode);
+	const [shareCodeError, setShareCodeError] = useState("");
+	const [isChangingShareCode, setIsChangingShareCode] = useState(false);
 	const { toast } = useToast();
 
 	const shareUrl =
 		typeof window !== "undefined"
-			? `${window.location.origin}/bank/${shareCode}`
+			? `${window.location.origin}/bank/${newShareCode}`
 			: "";
 
 	const handleSlotClick = (slotNumber: number) => {
@@ -129,6 +148,7 @@ export function BankViewer({
 					silver,
 					copper,
 					admin_notes: adminNotes,
+					game_mode: gameMode,
 					updated_at: new Date().toISOString(),
 				})
 				.eq("id", bankId);
@@ -276,6 +296,85 @@ export function BankViewer({
 		setItems(newItems);
 	};
 
+	const validateShareCode = (code: string): string | null => {
+		if (!code.trim()) {
+			return "Share code is required";
+		}
+		if (code.length > 30) {
+			return "Share code must be 30 characters or less";
+		}
+		if (!/^[a-zA-Z0-9_-]+$/.test(code)) {
+			return "Share code must be URL-friendly (letters, numbers, hyphens, and underscores only)";
+		}
+		return null;
+	};
+
+	const handleShareCodeChange = async () => {
+		const trimmedCode = newShareCode.trim();
+		const validationError = validateShareCode(trimmedCode);
+
+		if (validationError) {
+			setShareCodeError(validationError);
+			return;
+		}
+
+		if (trimmedCode === shareCode) {
+			setShareCodeError("");
+			return;
+		}
+
+		setShareCodeError("");
+		setIsChangingShareCode(true);
+
+		try {
+			const supabase = createClient();
+
+			// Check if the new share code is already taken
+			const { data: existingBank } = await supabase
+				.from("guild_banks")
+				.select("id")
+				.eq("share_code", trimmedCode)
+				.single();
+
+			if (existingBank) {
+				setShareCodeError(
+					"This share code is already taken. Please choose a different one.",
+				);
+				return;
+			}
+
+			// Update the share code in the database
+			const { error } = await supabase
+				.from("guild_banks")
+				.update({ share_code: trimmedCode })
+				.eq("id", bankId);
+
+			if (error) throw error;
+
+			// Update the URL in the browser
+			if (typeof window !== "undefined") {
+				window.history.replaceState(null, "", `/bank/${trimmedCode}`);
+			}
+
+			toast({
+				title: "Success",
+				description: "Share code updated successfully!",
+			});
+
+			// Update the local state
+			setNewShareCode(trimmedCode);
+		} catch (error) {
+			console.error("Error changing share code:", error);
+			toast({
+				title: "Error",
+				description: "Failed to change share code. Please try again.",
+				variant: "destructive",
+			});
+		} finally {
+			setIsChangingShareCode(false);
+		}
+	};
+
 	const currentItem = items.find((item) => item.slot_number === editingSlot);
 
 	return (
@@ -387,6 +486,7 @@ export function BankViewer({
 					items={items}
 					isEditMode={isEditMode && isUnlocked}
 					onSlotClick={handleSlotClick}
+					gameMode={gameMode}
 				/>
 
 				<div className="flex justify-center">
@@ -402,7 +502,7 @@ export function BankViewer({
 				{adminNotes && (
 					<div className="space-y-2">
 						<div className="text-stone-300 text-sm font-medium">Notes</div>
-						<div className="bg-stone-800 border border-stone-700 rounded-lg p-2 sm:p-3 text-stone-100 whitespace-pre-wrap text-sm sm:text-base">
+						<div className="bg-transparent  p-2 sm:p-3 text-stone-100 whitespace-pre-wrap text-sm sm:text-base">
 							{adminNotes}
 						</div>
 					</div>
@@ -410,20 +510,89 @@ export function BankViewer({
 
 				{isEditMode && isUnlocked && (
 					<div className="space-y-4">
-						<div className="space-y-2">
-							<div className="text-stone-300 text-sm font-medium">
-								Edit Title
+						{/* Horizontal layout for larger screens */}
+						<div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
+							{/* Game Mode Field */}
+							<div className="space-y-2">
+								<div className="text-stone-300 text-sm font-medium">
+									Game Mode
+								</div>
+								<Select
+									value={gameMode}
+									onValueChange={(value: GameMode) => setGameMode(value)}
+								>
+									<SelectTrigger className="bg-stone-800 border-stone-700 text-stone-100">
+										<SelectValue placeholder="Select game mode" />
+									</SelectTrigger>
+									<SelectContent className="bg-stone-800 border-stone-700">
+										{GAME_MODES.map((mode) => (
+											<SelectItem
+												key={mode}
+												value={mode}
+												className="text-stone-100 hover:bg-stone-700"
+											>
+												{GAME_MODE_LABELS[mode]}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								<p className="text-xs text-stone-500">
+									Determines fetched tooltip information
+								</p>
 							</div>
-							<Input
-								value={name}
-								onChange={(e) => setName(e.target.value)}
-								className="bg-stone-800 border-stone-700 text-stone-100 text-sm sm:text-base"
-								placeholder="Enter bank title"
-							/>
-							<p className="text-xs text-stone-500">
-								This title is shown at the top of the vault.
-							</p>
+							{/* Title Field */}
+							<div className="space-y-2">
+								<div className="text-stone-300 text-sm font-medium">
+									Edit Vault Title
+								</div>
+								<Input
+									value={name}
+									onChange={(e) => setName(e.target.value)}
+									className="bg-stone-800 border-stone-700 text-stone-100 text-sm sm:text-base"
+									placeholder="Enter bank title"
+								/>
+								<p className="text-xs text-stone-500">
+									This title is shown at the top of the vault.
+								</p>
+							</div>
+
+							{/* Share Code Field */}
+							<div className="space-y-2">
+								<div className="text-stone-300 text-sm font-medium">
+									Change Share Code
+								</div>
+								<div className="flex gap-2">
+									<Input
+										value={newShareCode}
+										onChange={(e) => {
+											setNewShareCode(e.target.value);
+											if (shareCodeError) setShareCodeError("");
+										}}
+										onKeyDown={(e) =>
+											e.key === "Enter" && handleShareCodeChange()
+										}
+										className={`bg-stone-800 text-stone-100 text-sm sm:text-base ${
+											shareCodeError
+												? "border-red-500 focus:border-red-400"
+												: "border-stone-700 focus:border-stone-600"
+										}`}
+										placeholder="Enter share code"
+										maxLength={30}
+									/>
+									<Button
+										onClick={handleShareCodeChange}
+										className="bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 whitespace-nowrap"
+									>
+										{isChangingShareCode ? "Saving..." : "Update"}
+									</Button>
+								</div>
+								{shareCodeError && (
+									<p className="text-xs text-red-400">{shareCodeError}</p>
+								)}
+								<p className="text-xs text-stone-500">Must be URL-friendly.</p>
+							</div>
 						</div>
+
 						<div className="space-y-2">
 							<div className="text-stone-300 text-sm font-medium">
 								Edit Notes
@@ -442,9 +611,6 @@ export function BankViewer({
 
 						<div className="space-y-2">
 							<div className="flex items-center justify-between">
-								<div className="text-stone-300 text-sm font-medium">
-									Change Password
-								</div>
 								<Button
 									onClick={() => setShowPasswordChange(!showPasswordChange)}
 									variant="outline"
@@ -452,7 +618,7 @@ export function BankViewer({
 									className="border-stone-700 text-stone-300 hover:bg-stone-800 bg-transparent"
 								>
 									<Key className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-									{showPasswordChange ? "Cancel" : "Change"}
+									{showPasswordChange ? "Cancel" : "New Password"}
 								</Button>
 							</div>
 
