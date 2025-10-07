@@ -62,7 +62,13 @@ export function ItemTooltip({ itemId, children, gameMode }: ItemTooltipProps) {
 
 	// Calculate tooltip position to keep it within viewport
 	useEffect(() => {
-		if (!showTooltip || !tooltipRef.current || !triggerRef.current) return;
+		if (
+			!showTooltip ||
+			!tooltipRef.current ||
+			!triggerRef.current ||
+			typeof window === "undefined"
+		)
+			return;
 
 		const tooltip = tooltipRef.current;
 		const trigger = triggerRef.current;
