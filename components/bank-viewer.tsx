@@ -510,88 +510,87 @@ export function BankViewer({
 
 				{isEditMode && isUnlocked && (
 					<div className="space-y-4">
-						<div className="space-y-2">
-							<div className="text-stone-300 text-sm font-medium">
-								Edit Title
-							</div>
-							<Input
-								value={name}
-								onChange={(e) => setName(e.target.value)}
-								className="bg-stone-800 border-stone-700 text-stone-100 text-sm sm:text-base"
-								placeholder="Enter bank title"
-							/>
-							<p className="text-xs text-stone-500">
-								This title is shown at the top of the vault.
-							</p>
-						</div>
-
-						<div className="space-y-2">
-							<div className="text-stone-300 text-sm font-medium">
-								Share Code
-							</div>
-							<div className="flex gap-2">
-								<Input
-									value={newShareCode}
-									onChange={(e) => {
-										setNewShareCode(e.target.value);
-										if (shareCodeError) setShareCodeError("");
-									}}
-									onKeyDown={(e) =>
-										e.key === "Enter" && handleShareCodeChange()
-									}
-									className={`bg-stone-800 text-stone-100 text-sm sm:text-base ${
-										shareCodeError
-											? "border-red-500 focus:border-red-400"
-											: "border-stone-700 focus:border-stone-600"
-									}`}
-									placeholder="Enter share code"
-									maxLength={30}
-								/>
-								<Button
-									onClick={handleShareCodeChange}
-									disabled={
-										isChangingShareCode || newShareCode.trim() === shareCode
-									}
-									className="bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50"
+						{/* Horizontal layout for larger screens */}
+						<div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
+							{/* Game Mode Field */}
+							<div className="space-y-2">
+								<div className="text-stone-300 text-sm font-medium">
+									Game Mode
+								</div>
+								<Select
+									value={gameMode}
+									onValueChange={(value: GameMode) => setGameMode(value)}
 								>
-									{isChangingShareCode ? "Saving..." : "Update"}
-								</Button>
+									<SelectTrigger className="bg-stone-800 border-stone-700 text-stone-100">
+										<SelectValue placeholder="Select game mode" />
+									</SelectTrigger>
+									<SelectContent className="bg-stone-800 border-stone-700">
+										{GAME_MODES.map((mode) => (
+											<SelectItem
+												key={mode}
+												value={mode}
+												className="text-stone-100 hover:bg-stone-700"
+											>
+												{GAME_MODE_LABELS[mode]}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								<p className="text-xs text-stone-500">
+									Determines fetched tooltip information
+								</p>
 							</div>
-							{shareCodeError && (
-								<p className="text-xs text-red-400">{shareCodeError}</p>
-							)}
-							<p className="text-xs text-stone-500">
-								Customize your vault URL. Must be URL-friendly (letters,
-								numbers, hyphens, underscores only). Max 30 characters.
-							</p>
-						</div>
-						<div className="space-y-2">
-							<div className="text-stone-300 text-sm font-medium">
-								Game Mode
+							{/* Title Field */}
+							<div className="space-y-2">
+								<div className="text-stone-300 text-sm font-medium">
+									Edit Vault Title
+								</div>
+								<Input
+									value={name}
+									onChange={(e) => setName(e.target.value)}
+									className="bg-stone-800 border-stone-700 text-stone-100 text-sm sm:text-base"
+									placeholder="Enter bank title"
+								/>
+								<p className="text-xs text-stone-500">
+									This title is shown at the top of the vault.
+								</p>
 							</div>
-							<Select
-								value={gameMode}
-								onValueChange={(value: GameMode) => setGameMode(value)}
-							>
-								<SelectTrigger className="bg-stone-800 border-stone-700 text-stone-100">
-									<SelectValue placeholder="Select game mode" />
-								</SelectTrigger>
-								<SelectContent className="bg-stone-800 border-stone-700">
-									{GAME_MODES.map((mode) => (
-										<SelectItem
-											key={mode}
-											value={mode}
-											className="text-stone-100 hover:bg-stone-700"
-										>
-											{GAME_MODE_LABELS[mode]}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							<p className="text-xs text-stone-500">
-								This determines which version of item tooltips will be
-								displayed.
-							</p>
+
+							{/* Share Code Field */}
+							<div className="space-y-2">
+								<div className="text-stone-300 text-sm font-medium">
+									Change Share Code
+								</div>
+								<div className="flex gap-2">
+									<Input
+										value={newShareCode}
+										onChange={(e) => {
+											setNewShareCode(e.target.value);
+											if (shareCodeError) setShareCodeError("");
+										}}
+										onKeyDown={(e) =>
+											e.key === "Enter" && handleShareCodeChange()
+										}
+										className={`bg-stone-800 text-stone-100 text-sm sm:text-base ${
+											shareCodeError
+												? "border-red-500 focus:border-red-400"
+												: "border-stone-700 focus:border-stone-600"
+										}`}
+										placeholder="Enter share code"
+										maxLength={30}
+									/>
+									<Button
+										onClick={handleShareCodeChange}
+										className="bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 whitespace-nowrap"
+									>
+										{isChangingShareCode ? "Saving..." : "Update"}
+									</Button>
+								</div>
+								{shareCodeError && (
+									<p className="text-xs text-red-400">{shareCodeError}</p>
+								)}
+								<p className="text-xs text-stone-500">Must be URL-friendly.</p>
+							</div>
 						</div>
 
 						<div className="space-y-2">
