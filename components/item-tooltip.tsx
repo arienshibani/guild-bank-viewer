@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/security/noDangerouslySetInnerHtml: Necessary evil. */
 "use client";
 
 import { Loader2 } from "lucide-react";
@@ -77,19 +78,19 @@ function processTooltipHTML(html: string): string {
 	// Replace moneysilver spans with icon + value
 	processedHTML = processedHTML.replace(
 		/<span class="moneysilver">(\d+)<\/span>/g,
-		'<span class="inline-flex items-center gap-1"><span class="w-3 h-3 bg-gradient-to-br from-gray-300 via-gray-400 to-gray-500 rounded-full border border-gray-200 inline-block"></span>$1</span>',
+		'<span class="inline-flex items-center gap-1"><img src="/images/icons/money-silver.gif" alt="Silver" class="w-3 h-3" />$1</span>',
 	);
 
 	// Replace moneycopper spans with icon + value
 	processedHTML = processedHTML.replace(
 		/<span class="moneycopper">(\d+)<\/span>/g,
-		'<span class="inline-flex items-center gap-1"><span class="w-3 h-3 bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 rounded-full border border-orange-400 inline-block"></span>$1</span>',
+		'<span class="inline-flex items-center gap-1"><img src="/images/icons/money-copper.gif" alt="Copper" class="w-3 h-3" />$1</span>',
 	);
 
 	// Replace moneygold spans with icon + value (if they exist)
 	processedHTML = processedHTML.replace(
 		/<span class="moneygold">(\d+)<\/span>/g,
-		'<span class="inline-flex items-center gap-1"><span class="w-3 h-3 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 rounded-full border border-yellow-300 inline-block"></span>$1</span>',
+		'<span class="inline-flex items-center gap-1"><img src="/images/icons/money-gold.gif" alt="Gold" class="w-3 h-3" />$1</span>',
 	);
 
 	// Style Max Stack text with gray color
