@@ -78,11 +78,14 @@ export function BankViewer({
 	const [isChangingPassword, setIsChangingPassword] = useState(false);
 	const [unlockError, setUnlockError] = useState("");
 	const [showImportDialog, setShowImportDialog] = useState(false);
+	const [newShareCode, setNewShareCode] = useState(shareCode);
+	const [shareCodeError, setShareCodeError] = useState("");
+	const [isChangingShareCode, setIsChangingShareCode] = useState(false);
 	const { toast } = useToast();
 
 	const shareUrl =
 		typeof window !== "undefined"
-			? `${window.location.origin}/bank/${shareCode}`
+			? `${window.location.origin}/bank/${newShareCode}`
 			: "";
 
 	const handleSlotClick = (slotNumber: number) => {
@@ -293,6 +296,85 @@ export function BankViewer({
 		setItems(newItems);
 	};
 
+	const validateShareCode = (code: string): string | null => {
+		if (!code.trim()) {
+			return "Share code is required";
+		}
+		if (code.length > 30) {
+			return "Share code must be 30 characters or less";
+		}
+		if (!/^[a-zA-Z0-9_-]+$/.test(code)) {
+			return "Share code must be URL-friendly (letters, numbers, hyphens, and underscores only)";
+		}
+		return null;
+	};
+
+	const handleShareCodeChange = async () => {
+		const trimmedCode = newShareCode.trim();
+		const validationError = validateShareCode(trimmedCode);
+
+		if (validationError) {
+			setShareCodeError(validationError);
+			return;
+		}
+
+		if (trimmedCode === shareCode) {
+			setShareCodeError("");
+			return;
+		}
+
+		setShareCodeError("");
+		setIsChangingShareCode(true);
+
+		try {
+			const supabase = createClient();
+
+			// Check if the new share code is already taken
+			const { data: existingBank } = await supabase
+				.from("guild_banks")
+				.select("id")
+				.eq("share_code", trimmedCode)
+				.single();
+
+			if (existingBank) {
+				setShareCodeError(
+					"This share code is already taken. Please choose a different one.",
+				);
+				return;
+			}
+
+			// Update the share code in the database
+			const { error } = await supabase
+				.from("guild_banks")
+				.update({ share_code: trimmedCode })
+				.eq("id", bankId);
+
+			if (error) throw error;
+
+			// Update the URL in the browser
+			if (typeof window !== "undefined") {
+				window.history.replaceState(null, "", `/bank/${trimmedCode}`);
+			}
+
+			toast({
+				title: "Success",
+				description: "Share code updated successfully!",
+			});
+
+			// Update the local state
+			setNewShareCode(trimmedCode);
+		} catch (error) {
+			console.error("Error changing share code:", error);
+			toast({
+				title: "Error",
+				description: "Failed to change share code. Please try again.",
+				variant: "destructive",
+			});
+		} finally {
+			setIsChangingShareCode(false);
+		}
+	};
+
 	const currentItem = items.find((item) => item.slot_number === editingSlot);
 
 	return (
@@ -440,6 +522,47 @@ export function BankViewer({
 							/>
 							<p className="text-xs text-stone-500">
 								This title is shown at the top of the vault.
+							</p>
+						</div>
+
+						<div className="space-y-2">
+							<div className="text-stone-300 text-sm font-medium">
+								Share Code
+							</div>
+							<div className="flex gap-2">
+								<Input
+									value={newShareCode}
+									onChange={(e) => {
+										setNewShareCode(e.target.value);
+										if (shareCodeError) setShareCodeError("");
+									}}
+									onKeyDown={(e) =>
+										e.key === "Enter" && handleShareCodeChange()
+									}
+									className={`bg-stone-800 text-stone-100 text-sm sm:text-base ${
+										shareCodeError
+											? "border-red-500 focus:border-red-400"
+											: "border-stone-700 focus:border-stone-600"
+									}`}
+									placeholder="Enter share code"
+									maxLength={30}
+								/>
+								<Button
+									onClick={handleShareCodeChange}
+									disabled={
+										isChangingShareCode || newShareCode.trim() === shareCode
+									}
+									className="bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50"
+								>
+									{isChangingShareCode ? "Saving..." : "Update"}
+								</Button>
+							</div>
+							{shareCodeError && (
+								<p className="text-xs text-red-400">{shareCodeError}</p>
+							)}
+							<p className="text-xs text-stone-500">
+								Customize your vault URL. Must be URL-friendly (letters,
+								numbers, hyphens, underscores only). Max 30 characters.
 							</p>
 						</div>
 						<div className="space-y-2">
