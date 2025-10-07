@@ -1,6 +1,6 @@
 "use client";
 
-import { PiggyBank, StarsIcon } from "lucide-react";
+import { Newspaper, PiggyBank, StarsIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -196,33 +196,11 @@ export default function Home() {
 						/>
 					</div>
 
-					{/* Example Admin Notes with fade animation */}
-					<div
-						className={`max-w-md mx-auto mt-6 transition-opacity duration-1000 ${
-							isGridLoaded ? "opacity-100" : "opacity-0"
-						}`}
-					>
-						<div className="space-y-2">
-							<div className="text-stone-300 text-sm font-medium">
-								Example notes
-							</div>
-							<div className="bg-stone-800 border border-stone-700 rounded-lg p-3 text-stone-100 whitespace-pre-wrap text-sm">
-								🏦 Guild Bank Alt: "Bankmaster" <br /> <br />📅 Last Updated:
-								2024-01-15 <br /> <br />🔒 Ask Kungen for withdrawals
-							</div>
-						</div>
-					</div>
-
 					<div
 						className={`text-center mt-6 transition-opacity duration-1000 ${
 							isGridLoaded ? "opacity-100" : "opacity-0"
 						}`}
-					>
-						<p className="text-sm text-stone-500">
-							Hover over items to see detailed tooltips with stats,
-							descriptions, and sale prices
-						</p>
-					</div>
+					></div>
 				</div>
 			</div>
 
@@ -243,24 +221,36 @@ export default function Home() {
 				></script>
 			</div>
 
-			{/* GitHub Link */}
-			<a
-				href="https://github.com/arienshibani/classic-guild-bank/"
-				target="_blank"
-				rel="noopener noreferrer"
-				className="absolute bottom-6 right-6 p-3 bg-stone-800/80 hover:bg-stone-700/80 rounded-full border border-stone-600/50 hover:border-stone-500/50 transition-all duration-200 group"
-				aria-label="View source code on GitHub"
-			>
-				<svg
-					className="w-5 h-5 text-stone-400 group-hover:text-stone-300 transition-colors"
-					viewBox="0 0 24 24"
-					fill="currentColor"
-					xmlns="http://www.w3.org/2000/svg"
+			{/* Navigation Links */}
+			<div className="absolute bottom-6 right-6 flex gap-3">
+				{/* Changelog Link */}
+				<Link
+					href="/changelog"
+					className="p-3 bg-stone-800/80 hover:bg-stone-700/80 rounded-full border border-stone-600/50 hover:border-stone-500/50 transition-all duration-200 group"
+					aria-label="View changelog"
 				>
-					<title>GitHub</title>
-					<path d={siGithub.path} />
-				</svg>
-			</a>
+					<Newspaper className="w-5 h-5 text-stone-400 group-hover:text-stone-300 transition-colors" />
+				</Link>
+
+				{/* GitHub Link */}
+				<a
+					href="https://github.com/arienshibani/classic-guild-bank/"
+					target="_blank"
+					rel="noopener noreferrer"
+					className="p-3 bg-stone-800/80 hover:bg-stone-700/80 rounded-full border border-stone-600/50 hover:border-stone-500/50 transition-all duration-200 group"
+					aria-label="View source code on GitHub"
+				>
+					<svg
+						className="w-5 h-5 text-stone-400 group-hover:text-stone-300 transition-colors"
+						viewBox="0 0 24 24"
+						fill="currentColor"
+						xmlns="http://www.w3.org/2000/svg"
+					>
+						<title>GitHub</title>
+						<path d={siGithub.path} />
+					</svg>
+				</a>
+			</div>
 		</main>
 	);
 }
