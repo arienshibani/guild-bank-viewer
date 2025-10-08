@@ -11,6 +11,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { hashPassword, verifyPassword } from "@/lib/password";
@@ -80,13 +81,44 @@ export function BankViewer({
 	const [showImportDialog, setShowImportDialog] = useState(false);
 	const [newShareCode, setNewShareCode] = useState(shareCode);
 	const [shareCodeError, setShareCodeError] = useState("");
-	const [isChangingShareCode, setIsChangingShareCode] = useState(false);
+	const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+	const [currentTab, setCurrentTab] = useState("bank-settings");
 	const { toast } = useToast();
 
 	const shareUrl =
 		typeof window !== "undefined"
 			? `${window.location.origin}/bank/${newShareCode}`
 			: "";
+
+	// Check if there are unsaved changes
+	const checkForUnsavedChanges = () => {
+		const hasChanges =
+			name !== bankName ||
+			newShareCode.trim() !== shareCode ||
+			adminNotes !== initialAdminNotes ||
+			gameMode !== initialGameMode ||
+			gold !== initialGold ||
+			silver !== initialSilver ||
+			copper !== initialCopper ||
+			JSON.stringify(items) !== JSON.stringify(initialItems);
+
+		setHasUnsavedChanges(hasChanges);
+		return hasChanges;
+	};
+
+	// Reset all changes to original values
+	const resetChanges = () => {
+		setName(bankName);
+		setNewShareCode(shareCode);
+		setAdminNotes(initialAdminNotes);
+		setGameMode(initialGameMode);
+		setGold(initialGold);
+		setSilver(initialSilver);
+		setCopper(initialCopper);
+		setItems(initialItems);
+		setHasUnsavedChanges(false);
+		setShareCodeError("");
+	};
 
 	const handleSlotClick = (slotNumber: number) => {
 		if (isEditMode && isUnlocked) {
@@ -99,27 +131,30 @@ export function BankViewer({
 		itemId: number | null,
 		quantity: number,
 	) => {
+		let newItems;
 		if (itemId === null) {
-			setItems(items.filter((item) => item.slot_number !== slotNumber));
+			newItems = items.filter((item) => item.slot_number !== slotNumber);
 		} else {
 			const existingIndex = items.findIndex(
 				(item) => item.slot_number === slotNumber,
 			);
 			if (existingIndex >= 0) {
-				const newItems = [...items];
+				newItems = [...items];
 				newItems[existingIndex] = {
 					slot_number: slotNumber,
 					item_id: itemId,
 					quantity,
 				};
-				setItems(newItems);
 			} else {
-				setItems([
+				newItems = [
 					...items,
 					{ slot_number: slotNumber, item_id: itemId, quantity },
-				]);
+				];
 			}
 		}
+		setItems(newItems);
+		// Check for unsaved changes after a short delay to ensure state is updated
+		setTimeout(checkForUnsavedChanges, 0);
 	};
 
 	const handleMoneyChange = (
@@ -130,6 +165,8 @@ export function BankViewer({
 		setGold(newGold);
 		setSilver(newSilver);
 		setCopper(newCopper);
+		// Check for unsaved changes after a short delay to ensure state is updated
+		setTimeout(checkForUnsavedChanges, 0);
 	};
 
 	const handleSaveChanges = async () => {
@@ -139,21 +176,59 @@ export function BankViewer({
 		try {
 			const supabase = createClient();
 
-			// Update guild bank money and admin notes
+			// Validate share code if it has changed
+			const trimmedShareCode = newShareCode.trim();
+			if (trimmedShareCode !== shareCode) {
+				const validationError = validateShareCode(trimmedShareCode);
+				if (validationError) {
+					setShareCodeError(validationError);
+					setIsSaving(false);
+					return;
+				}
+
+				// Check if the new share code is already taken
+				const { data: existingBank } = await supabase
+					.from("guild_banks")
+					.select("id")
+					.eq("share_code", trimmedShareCode)
+					.single();
+
+				if (existingBank) {
+					setShareCodeError(
+						"This share code is already taken. Please choose a different one.",
+					);
+					setIsSaving(false);
+					return;
+				}
+			}
+
+			// Update guild bank with all changes including share code
+			const updateData: any = {
+				name,
+				gold,
+				silver,
+				copper,
+				admin_notes: adminNotes,
+				game_mode: gameMode,
+				updated_at: new Date().toISOString(),
+			};
+
+			// Only update share code if it has changed
+			if (trimmedShareCode !== shareCode) {
+				updateData.share_code = trimmedShareCode;
+			}
+
 			const { error: moneyError } = await supabase
 				.from("guild_banks")
-				.update({
-					name,
-					gold,
-					silver,
-					copper,
-					admin_notes: adminNotes,
-					game_mode: gameMode,
-					updated_at: new Date().toISOString(),
-				})
+				.update(updateData)
 				.eq("id", bankId);
 
 			if (moneyError) throw moneyError;
+
+			// Update URL if share code changed
+			if (trimmedShareCode !== shareCode && typeof window !== "undefined") {
+				window.history.replaceState(null, "", `/bank/${trimmedShareCode}`);
+			}
 
 			// Delete all existing items for this bank
 			await supabase.from("bank_items").delete().eq("guild_bank_id", bankId);
@@ -173,6 +248,14 @@ export function BankViewer({
 
 				if (error) throw error;
 			}
+
+			// Clear share code error if it was set
+			if (shareCodeError) {
+				setShareCodeError("");
+			}
+
+			// Reset unsaved changes flag
+			setHasUnsavedChanges(false);
 
 			toast({
 				title: "Success",
@@ -294,6 +377,8 @@ export function BankViewer({
 		});
 
 		setItems(newItems);
+		// Check for unsaved changes after a short delay to ensure state is updated
+		setTimeout(checkForUnsavedChanges, 0);
 	};
 
 	const validateShareCode = (code: string): string | null => {
@@ -307,72 +392,6 @@ export function BankViewer({
 			return "Share code must be URL-friendly (letters, numbers, hyphens, and underscores only)";
 		}
 		return null;
-	};
-
-	const handleShareCodeChange = async () => {
-		const trimmedCode = newShareCode.trim();
-		const validationError = validateShareCode(trimmedCode);
-
-		if (validationError) {
-			setShareCodeError(validationError);
-			return;
-		}
-
-		if (trimmedCode === shareCode) {
-			setShareCodeError("");
-			return;
-		}
-
-		setShareCodeError("");
-		setIsChangingShareCode(true);
-
-		try {
-			const supabase = createClient();
-
-			// Check if the new share code is already taken
-			const { data: existingBank } = await supabase
-				.from("guild_banks")
-				.select("id")
-				.eq("share_code", trimmedCode)
-				.single();
-
-			if (existingBank) {
-				setShareCodeError(
-					"This share code is already taken. Please choose a different one.",
-				);
-				return;
-			}
-
-			// Update the share code in the database
-			const { error } = await supabase
-				.from("guild_banks")
-				.update({ share_code: trimmedCode })
-				.eq("id", bankId);
-
-			if (error) throw error;
-
-			// Update the URL in the browser
-			if (typeof window !== "undefined") {
-				window.history.replaceState(null, "", `/bank/${trimmedCode}`);
-			}
-
-			toast({
-				title: "Success",
-				description: "Share code updated successfully!",
-			});
-
-			// Update the local state
-			setNewShareCode(trimmedCode);
-		} catch (error) {
-			console.error("Error changing share code:", error);
-			toast({
-				title: "Error",
-				description: "Failed to change share code. Please try again.",
-				variant: "destructive",
-			});
-		} finally {
-			setIsChangingShareCode(false);
-		}
 	};
 
 	const currentItem = items.find((item) => item.slot_number === editingSlot);
@@ -499,7 +518,7 @@ export function BankViewer({
 					/>
 				</div>
 
-				{adminNotes && (
+				{adminNotes && !isEditMode && (
 					<div className="space-y-2">
 						<div className="text-stone-300 text-sm font-medium">Notes</div>
 						<div className="bg-transparent  p-2 sm:p-3 text-stone-100 whitespace-pre-wrap text-sm sm:text-base">
@@ -509,68 +528,104 @@ export function BankViewer({
 				)}
 
 				{isEditMode && isUnlocked && (
-					<div className="space-y-4">
-						{/* Horizontal layout for larger screens */}
-						<div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
-							{/* Game Mode Field */}
-							<div className="space-y-2">
-								<div className="text-stone-300 text-sm font-medium">
-									Game Mode
-								</div>
-								<Select
-									value={gameMode}
-									onValueChange={(value: GameMode) => setGameMode(value)}
-								>
-									<SelectTrigger className="bg-stone-800 border-stone-700 text-stone-100">
-										<SelectValue placeholder="Select game mode" />
-									</SelectTrigger>
-									<SelectContent className="bg-stone-800 border-stone-700">
-										{GAME_MODES.map((mode) => (
-											<SelectItem
-												key={mode}
-												value={mode}
-												className="text-stone-100 hover:bg-stone-700"
-											>
-												{GAME_MODE_LABELS[mode]}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-								<p className="text-xs text-stone-500">
-									Determines fetched tooltip information
-								</p>
-							</div>
-							{/* Title Field */}
-							<div className="space-y-2">
-								<div className="text-stone-300 text-sm font-medium">
-									Edit Vault Title
-								</div>
-								<Input
-									value={name}
-									onChange={(e) => setName(e.target.value)}
-									className="bg-stone-800 border-stone-700 text-stone-100 text-sm sm:text-base"
-									placeholder="Enter bank title"
-								/>
-								<p className="text-xs text-stone-500">
-									This title is shown at the top of the vault.
-								</p>
-							</div>
+					<Tabs
+						value={currentTab}
+						onValueChange={(value) => {
+							if (hasUnsavedChanges) {
+								toast({
+									title: "Unsaved Changes",
+									description:
+										"You have unsaved changes. Save your changes or use the 'Reset Changes' button to discard them before switching tabs.",
+									variant: "destructive",
+								});
+								return;
+							}
+							setCurrentTab(value);
+						}}
+						className="w-full"
+					>
+						<TabsList className="grid w-full grid-cols-2 bg-stone-800 border-stone-700">
+							<TabsTrigger
+								value="bank-settings"
+								className="data-[state=active]:bg-stone-700 data-[state=active]:text-stone-100 text-stone-300"
+								disabled={hasUnsavedChanges && currentTab !== "bank-settings"}
+							>
+								Bank Settings
+							</TabsTrigger>
+							<TabsTrigger
+								value="bank-slots"
+								className="data-[state=active]:bg-stone-700 data-[state=active]:text-stone-100 text-stone-300"
+								disabled={hasUnsavedChanges && currentTab !== "bank-slots"}
+							>
+								Configure Bank Slots
+							</TabsTrigger>
+						</TabsList>
 
-							{/* Share Code Field */}
-							<div className="space-y-2">
-								<div className="text-stone-300 text-sm font-medium">
-									Change Share Code
+						<TabsContent value="bank-settings" className="space-y-4 mt-4">
+							{/* Horizontal layout for larger screens */}
+							<div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
+								{/* Game Mode Field */}
+								<div className="space-y-2">
+									<div className="text-stone-300 text-sm font-medium">
+										Game Mode
+									</div>
+									<Select
+										value={gameMode}
+										onValueChange={(value: GameMode) => {
+											setGameMode(value);
+											setTimeout(checkForUnsavedChanges, 0);
+										}}
+									>
+										<SelectTrigger className="bg-stone-800 border-stone-700 text-stone-100 w-full">
+											<SelectValue placeholder="Select game mode" />
+										</SelectTrigger>
+										<SelectContent className="bg-stone-800 border-stone-700">
+											{GAME_MODES.map((mode) => (
+												<SelectItem
+													key={mode}
+													value={mode}
+													className="text-stone-100 hover:bg-stone-700"
+												>
+													{GAME_MODE_LABELS[mode]}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+									<p className="text-xs text-stone-500">
+										Determines fetched tooltip information
+									</p>
 								</div>
-								<div className="flex gap-2">
+								{/* Title Field */}
+								<div className="space-y-2">
+									<div className="text-stone-300 text-sm font-medium">
+										Edit Vault Title
+									</div>
+									<Input
+										value={name}
+										onChange={(e) => {
+											setName(e.target.value);
+											setTimeout(checkForUnsavedChanges, 0);
+										}}
+										className="bg-stone-800 border-stone-700 text-stone-100 text-sm sm:text-base"
+										placeholder="Enter bank title"
+									/>
+									<p className="text-xs text-stone-500">
+										This title is shown at the top of the vault.
+									</p>
+								</div>
+
+								{/* Share Code Field */}
+								<div className="space-y-2">
+									<div className="text-stone-300 text-sm font-medium">
+										Change Share Code
+									</div>
 									<Input
 										value={newShareCode}
 										onChange={(e) => {
 											setNewShareCode(e.target.value);
 											if (shareCodeError) setShareCodeError("");
+											setTimeout(checkForUnsavedChanges, 0);
 										}}
-										onKeyDown={(e) =>
-											e.key === "Enter" && handleShareCodeChange()
-										}
 										className={`bg-stone-800 text-stone-100 text-sm sm:text-base ${
 											shareCodeError
 												? "border-red-500 focus:border-red-400"
@@ -579,111 +634,133 @@ export function BankViewer({
 										placeholder="Enter share code"
 										maxLength={30}
 									/>
-									<Button
-										onClick={handleShareCodeChange}
-										className="bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 whitespace-nowrap"
-									>
-										{isChangingShareCode ? "Saving..." : "Update"}
-									</Button>
-								</div>
-								{shareCodeError && (
-									<p className="text-xs text-red-400">{shareCodeError}</p>
-								)}
-								<p className="text-xs text-stone-500">Must be URL-friendly.</p>
-							</div>
-						</div>
-
-						<div className="space-y-2">
-							<div className="text-stone-300 text-sm font-medium">
-								Edit Notes
-							</div>
-							<Textarea
-								value={adminNotes}
-								onChange={(e) => setAdminNotes(e.target.value)}
-								className="bg-stone-800 border-stone-700 text-stone-100 min-h-[80px] sm:min-h-[100px] text-sm sm:text-base"
-								placeholder="Add notes about this bank (e.g., bank alt name, event logs, etc.)"
-							/>
-							<p className="text-xs text-stone-500">
-								These notes are visible to everyone and can be used for tracking
-								bank alt names, event logs, or other information.
-							</p>
-						</div>
-
-						<div className="space-y-2">
-							<div className="flex items-center justify-between">
-								<Button
-									onClick={() => setShowPasswordChange(!showPasswordChange)}
-									variant="outline"
-									size="sm"
-									className="border-stone-700 text-stone-300 hover:bg-stone-800 bg-transparent"
-								>
-									<Key className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-									{showPasswordChange ? "Cancel" : "New Password"}
-								</Button>
-							</div>
-
-							{showPasswordChange && (
-								<div className="bg-stone-800 border border-stone-700 rounded-lg p-3 space-y-3">
-									<div className="space-y-2">
-										<Input
-											type="password"
-											value={newPassword}
-											onChange={(e) => {
-												setNewPassword(e.target.value);
-												if (passwordError) setPasswordError("");
-											}}
-											placeholder="New password"
-											className="bg-stone-900 border-stone-700 text-stone-100"
-										/>
-										<Input
-											type="password"
-											value={confirmPassword}
-											onChange={(e) => {
-												setConfirmPassword(e.target.value);
-												if (passwordError) setPasswordError("");
-											}}
-											placeholder="Confirm new password"
-											className="bg-stone-900 border-stone-700 text-stone-100"
-										/>
-									</div>
-									{passwordError && (
-										<p className="text-xs text-red-400">{passwordError}</p>
+									{shareCodeError && (
+										<p className="text-xs text-red-400">{shareCodeError}</p>
 									)}
-									<div className="flex gap-2">
-										<Button
-											onClick={handleChangePassword}
-											disabled={isChangingPassword}
-											size="sm"
-											className="bg-amber-600 hover:bg-amber-700 text-white"
-										>
-											{isChangingPassword ? "Changing..." : "Change Password"}
-										</Button>
-										<Button
-											onClick={() => {
-												setShowPasswordChange(false);
-												setNewPassword("");
-												setConfirmPassword("");
-												setPasswordError("");
-											}}
-											variant="outline"
-											size="sm"
-											className="border-stone-700 text-stone-300"
-										>
-											Cancel
-										</Button>
-									</div>
 									<p className="text-xs text-stone-500">
-										This will change the password required to edit this bank
+										Must be URL-friendly. Changes will be saved with other bank
+										settings.
 									</p>
 								</div>
-							)}
-						</div>
-					</div>
+							</div>
+
+							<div className="space-y-2">
+								<div className="text-stone-300 text-sm font-medium">
+									Edit Notes
+								</div>
+								<Textarea
+									value={adminNotes}
+									onChange={(e) => {
+										setAdminNotes(e.target.value);
+										setTimeout(checkForUnsavedChanges, 0);
+									}}
+									className="bg-stone-800 border-stone-700 text-stone-100 min-h-[80px] sm:min-h-[100px] text-sm sm:text-base"
+									placeholder="Add notes about this bank (e.g., bank alt name, event logs, etc.)"
+								/>
+								<p className="text-xs text-stone-500">
+									These notes are visible to everyone and can be used for
+									tracking bank alt names, event logs, or other information.
+								</p>
+							</div>
+
+							<div className="space-y-2">
+								<div className="flex items-center justify-between">
+									<Button
+										onClick={() => setShowPasswordChange(!showPasswordChange)}
+										variant="outline"
+										size="sm"
+										className="border-stone-700 text-stone-300 hover:bg-stone-800 bg-transparent"
+									>
+										<Key className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+										{showPasswordChange ? "Cancel" : "New Password"}
+									</Button>
+								</div>
+
+								{showPasswordChange && (
+									<div className="bg-stone-800 border border-stone-700 rounded-lg p-3 space-y-3">
+										<div className="space-y-2">
+											<Input
+												type="password"
+												value={newPassword}
+												onChange={(e) => {
+													setNewPassword(e.target.value);
+													if (passwordError) setPasswordError("");
+												}}
+												placeholder="New password"
+												className="bg-stone-900 border-stone-700 text-stone-100"
+											/>
+											<Input
+												type="password"
+												value={confirmPassword}
+												onChange={(e) => {
+													setConfirmPassword(e.target.value);
+													if (passwordError) setPasswordError("");
+												}}
+												placeholder="Confirm new password"
+												className="bg-stone-900 border-stone-700 text-stone-100"
+											/>
+										</div>
+										{passwordError && (
+											<p className="text-xs text-red-400">{passwordError}</p>
+										)}
+										<div className="flex gap-2">
+											<Button
+												onClick={handleChangePassword}
+												disabled={isChangingPassword}
+												size="sm"
+												className="bg-amber-600 hover:bg-amber-700 text-white"
+											>
+												{isChangingPassword ? "Changing..." : "Change Password"}
+											</Button>
+											<Button
+												onClick={() => {
+													setShowPasswordChange(false);
+													setNewPassword("");
+													setConfirmPassword("");
+													setPasswordError("");
+												}}
+												variant="outline"
+												size="sm"
+												className="border-stone-700 text-stone-300"
+											>
+												Cancel
+											</Button>
+										</div>
+										<p className="text-xs text-stone-500">
+											This will change the password required to edit this bank
+										</p>
+									</div>
+								)}
+							</div>
+						</TabsContent>
+
+						<TabsContent value="bank-slots" className="space-y-4 mt-4">
+							<div className="text-stone-300 text-sm font-medium mb-4">
+								Bank Slot Configuration
+							</div>
+							<div className="bg-stone-800 border border-stone-700 rounded-lg p-4">
+								<p className="text-stone-400 text-sm">
+									Slot configuration options will be available here in future
+									updates.
+								</p>
+							</div>
+						</TabsContent>
+					</Tabs>
 				)}
 			</div>
 
 			{isEditMode && isUnlocked && (
-				<div className="flex justify-end">
+				<div className="flex justify-end gap-2">
+					{hasUnsavedChanges && (
+						<Button
+							onClick={resetChanges}
+							variant="outline"
+							size="lg"
+							className="border-stone-700 text-stone-300 hover:bg-stone-800"
+						>
+							Reset Changes
+						</Button>
+					)}
 					<Button
 						onClick={handleSaveChanges}
 						disabled={isSaving}
