@@ -22,6 +22,8 @@ import { useToast } from "@/hooks/use-toast";
 import { hashPassword } from "@/lib/password";
 import { createClient } from "@/lib/supabase/client";
 import {
+	type BankSlotConfig,
+	DEFAULT_BANK_SLOT_CONFIG,
 	DEFAULT_GAME_MODE,
 	GAME_MODE_LABELS,
 	GAME_MODES,
@@ -48,6 +50,9 @@ export default function NewBankPage() {
 	const [gold, setGold] = useState(0);
 	const [silver, setSilver] = useState(0);
 	const [copper, setCopper] = useState(0);
+	const [slotConfigs, setSlotConfigs] = useState<BankSlotConfig[]>(
+		DEFAULT_BANK_SLOT_CONFIG,
+	);
 	// Bank creation is always in view mode - no edit mode toggle
 	const [editingSlot, setEditingSlot] = useState<number | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
@@ -130,6 +135,7 @@ export default function NewBankPage() {
 					gold,
 					silver,
 					copper,
+					bag_configs: slotConfigs,
 				})
 				.select()
 				.single();

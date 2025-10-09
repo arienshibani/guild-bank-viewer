@@ -4,7 +4,12 @@ import { notFound } from "next/navigation";
 import { BankViewer } from "@/components/bank-viewer";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
-import { DEFAULT_GAME_MODE, type GameMode } from "@/lib/types";
+import {
+	type BankSlotConfig,
+	DEFAULT_BANK_SLOT_CONFIG,
+	DEFAULT_GAME_MODE,
+	type GameMode,
+} from "@/lib/types";
 
 interface BankItem {
 	slot_number: number;
@@ -23,6 +28,7 @@ interface GuildBank {
 	gold: number;
 	silver: number;
 	copper: number;
+	bag_configs?: BankSlotConfig[];
 }
 
 export default async function BankViewPage({
@@ -55,6 +61,9 @@ export default async function BankViewPage({
 
 	const items = (itemsData as BankItem[]) || [];
 
+	// Parse bag configurations from database or use defaults
+	const slotConfigs = bank.bag_configs || DEFAULT_BANK_SLOT_CONFIG;
+
 	return (
 		<main className="min-h-screen bg-gradient-to-b from-stone-900 to-stone-950 p-8">
 			<div className="max-w-4xl mx-auto space-y-6">
@@ -83,6 +92,7 @@ export default async function BankViewPage({
 					initialSilver={bank.silver || 0}
 					initialCopper={bank.copper || 0}
 					initialGameMode={(bank.game_mode as GameMode) || DEFAULT_GAME_MODE}
+					initialSlotConfigs={slotConfigs}
 				/>
 			</div>
 		</main>

@@ -17,11 +17,14 @@ import { useToast } from "@/hooks/use-toast";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { createClient } from "@/lib/supabase/client";
 import {
+	type BankSlotConfig,
+	DEFAULT_BANK_SLOT_CONFIG,
 	DEFAULT_GAME_MODE,
 	GAME_MODE_LABELS,
 	GAME_MODES,
 	type GameMode,
 } from "@/lib/types";
+import { BagSlotConfiguration } from "./bag-slot-configuration";
 import { BankGrid } from "./bank-grid";
 import { ImportDialog } from "./import-dialog";
 import { ItemEditDialog } from "./item-edit-dialog";
@@ -44,6 +47,7 @@ interface BankViewerProps {
 	initialSilver?: number;
 	initialCopper?: number;
 	initialGameMode?: GameMode;
+	initialSlotConfigs?: BankSlotConfig[];
 }
 
 export function BankViewer({
@@ -57,6 +61,7 @@ export function BankViewer({
 	initialSilver = 0,
 	initialCopper = 0,
 	initialGameMode = DEFAULT_GAME_MODE,
+	initialSlotConfigs = DEFAULT_BANK_SLOT_CONFIG,
 }: BankViewerProps) {
 	const [items, setItems] = useState<BankItem[]>(initialItems);
 	const [name, setName] = useState(bankName);
@@ -65,6 +70,8 @@ export function BankViewer({
 	const [copper, setCopper] = useState(initialCopper);
 	const [adminNotes, setAdminNotes] = useState(initialAdminNotes);
 	const [gameMode, setGameMode] = useState<GameMode>(initialGameMode);
+	const [slotConfigs, setSlotConfigs] =
+		useState<BankSlotConfig[]>(initialSlotConfigs);
 	const [isEditMode, setIsEditMode] = useState(false);
 	const [editingSlot, setEditingSlot] = useState<number | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
@@ -100,7 +107,8 @@ export function BankViewer({
 			gold !== initialGold ||
 			silver !== initialSilver ||
 			copper !== initialCopper ||
-			JSON.stringify(items) !== JSON.stringify(initialItems);
+			JSON.stringify(items) !== JSON.stringify(initialItems) ||
+			JSON.stringify(slotConfigs) !== JSON.stringify(initialSlotConfigs);
 
 		setHasUnsavedChanges(hasChanges);
 		return hasChanges;
@@ -116,6 +124,7 @@ export function BankViewer({
 		setSilver(initialSilver);
 		setCopper(initialCopper);
 		setItems(initialItems);
+		setSlotConfigs(initialSlotConfigs);
 		setHasUnsavedChanges(false);
 		setShareCodeError("");
 	};
@@ -131,7 +140,7 @@ export function BankViewer({
 		itemId: number | null,
 		quantity: number,
 	) => {
-		let newItems;
+		let newItems: BankItem[];
 		if (itemId === null) {
 			newItems = items.filter((item) => item.slot_number !== slotNumber);
 		} else {
@@ -203,13 +212,24 @@ export function BankViewer({
 			}
 
 			// Update guild bank with all changes including share code
-			const updateData: any = {
+			const updateData: {
+				name: string;
+				gold: number;
+				silver: number;
+				copper: number;
+				admin_notes: string;
+				game_mode: GameMode;
+				bag_configs: BankSlotConfig[];
+				updated_at: string;
+				share_code?: string;
+			} = {
 				name,
 				gold,
 				silver,
 				copper,
 				admin_notes: adminNotes,
 				game_mode: gameMode,
+				bag_configs: slotConfigs,
 				updated_at: new Date().toISOString(),
 			};
 
@@ -381,6 +401,17 @@ export function BankViewer({
 		setTimeout(checkForUnsavedChanges, 0);
 	};
 
+	const handleSlotConfigChange = (slotIndex: number, bagTypeId: string) => {
+		const newSlotConfigs = [...slotConfigs];
+		newSlotConfigs[slotIndex] = {
+			slotIndex,
+			bagTypeId,
+		};
+		setSlotConfigs(newSlotConfigs);
+		// Check for unsaved changes after a short delay to ensure state is updated
+		setTimeout(checkForUnsavedChanges, 0);
+	};
+
 	const validateShareCode = (code: string): string | null => {
 		if (!code.trim()) {
 			return "Share code is required";
@@ -506,6 +537,7 @@ export function BankViewer({
 					isEditMode={isEditMode && isUnlocked}
 					onSlotClick={handleSlotClick}
 					gameMode={gameMode}
+					slotConfigs={slotConfigs}
 				/>
 
 				<div className="flex justify-center">
@@ -735,15 +767,10 @@ export function BankViewer({
 						</TabsContent>
 
 						<TabsContent value="bank-slots" className="space-y-4 mt-4">
-							<div className="text-stone-300 text-sm font-medium mb-4">
-								Bank Slot Configuration
-							</div>
-							<div className="bg-stone-800 border border-stone-700 rounded-lg p-4">
-								<p className="text-stone-400 text-sm">
-									Slot configuration options will be available here in future
-									updates.
-								</p>
-							</div>
+							<BagSlotConfiguration
+								slotConfigs={slotConfigs}
+								onSlotConfigChange={handleSlotConfigChange}
+							/>
 						</TabsContent>
 					</Tabs>
 				)}

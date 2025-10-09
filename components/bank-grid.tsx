@@ -1,6 +1,7 @@
 "use client";
 
-import type { GameMode } from "@/lib/types";
+import type { BankSlotConfig, GameMode } from "@/lib/types";
+import { BAG_TYPES } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { BankSlot } from "./bank-slot";
 
@@ -15,6 +16,7 @@ interface BankGridProps {
 	isEditMode: boolean;
 	onSlotClick: (slotNumber: number) => void;
 	gameMode?: GameMode;
+	slotConfigs?: BankSlotConfig[];
 }
 
 export function BankGrid({
@@ -22,12 +24,25 @@ export function BankGrid({
 	isEditMode,
 	onSlotClick,
 	gameMode,
+	slotConfigs = [],
 }: BankGridProps) {
+	// Calculate total slots based on bag configuration
+	const getTotalSlots = () => {
+		const baseSlots = 28;
+		const bagSlots = slotConfigs.reduce((total, config) => {
+			const bagType = BAG_TYPES.find((bag) => bag.id === config.bagTypeId);
+			return total + (bagType?.slots || 0);
+		}, 0);
+		return baseSlots + bagSlots;
+	};
+
+	const totalSlots = getTotalSlots();
+
 	// Create a map of slot number to item for quick lookup
 	const itemMap = new Map(items.map((item) => [item.slot_number, item]));
 
-	// Generate 28 slots
-	const slots = Array.from({ length: 28 }, (_, i) => {
+	// Generate slots based on total capacity
+	const slots = Array.from({ length: totalSlots }, (_, i) => {
 		const item = itemMap.get(i);
 		return {
 			slotNumber: i,
