@@ -8,6 +8,9 @@ describe("tooltipUrl", () => {
 		);
 		expect(tooltipUrl("1", "wotlk")).toContain("/wotlk/tooltip/item/1");
 		expect(tooltipUrl("1", "cata")).toContain("/cata/tooltip/item/1");
+		expect(tooltipUrl("1", "mop-classic")).toContain(
+			"/mop-classic/tooltip/item/1",
+		);
 	});
 	it("uses the unprefixed endpoint for retail", () => {
 		expect(tooltipUrl(19019, "retail")).toBe(
