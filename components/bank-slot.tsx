@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useItem } from "@/hooks/use-item";
 import type { GameMode } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ItemTooltip } from "./item-tooltip";
@@ -57,40 +58,10 @@ export function BankSlot({
 	gameMode,
 }: BankSlotProps) {
 	const [isHovered, setIsHovered] = useState(false);
-	const [itemQuality, setItemQuality] = useState<number | null>(null);
-	const [itemIconName, setItemIconName] = useState<string | null>(null);
-
 	const hasItem = itemId !== undefined && itemId > 0;
-
-	// Fetch item quality and icon name when itemId changes
-	useEffect(() => {
-		if (!itemId) {
-			setItemQuality(null);
-			setItemIconName(null);
-			return;
-		}
-
-		const fetchItemData = async () => {
-			try {
-				const gameModeParam = gameMode
-					? `?gameMode=${encodeURIComponent(gameMode)}`
-					: "";
-				const response = await fetch(`/api/item/${itemId}${gameModeParam}`);
-
-				if (response.ok) {
-					const data = await response.json();
-					const quality = data.quality || 0;
-					const iconName = data.iconName || null;
-					setItemQuality(quality);
-					setItemIconName(iconName);
-				}
-			} catch {
-				// Silently handle errors - item will just show without quality border
-			}
-		};
-
-		fetchItemData();
-	}, [itemId, gameMode]);
+	const { item } = useItem(itemId, gameMode);
+	const itemQuality = item ? item.quality || 0 : null;
+	const itemIconName = item?.iconName ?? null;
 
 	const slotContent = (
 		<button
