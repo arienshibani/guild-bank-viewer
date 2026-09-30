@@ -73,6 +73,7 @@ export function BankViewer({
 	const [isChangingPassword, setIsChangingPassword] = useState(false);
 	const [unlockError, setUnlockError] = useState("");
 	const [showImportDialog, setShowImportDialog] = useState(false);
+	const [currentShareCode, setCurrentShareCode] = useState(shareCode);
 	const [newShareCode, setNewShareCode] = useState(shareCode);
 	const [shareCodeError, setShareCodeError] = useState("");
 	const [isChangingShareCode, setIsChangingShareCode] = useState(false);
@@ -80,7 +81,7 @@ export function BankViewer({
 
 	const shareUrl =
 		typeof window !== "undefined"
-			? `${window.location.origin}/bank/${newShareCode}`
+			? `${window.location.origin}/bank/${currentShareCode}`
 			: "";
 
 	const handleSlotClick = (slotNumber: number) => {
@@ -219,7 +220,7 @@ export function BankViewer({
 
 		try {
 			const result = await createBrowserBankService().changeShareCode(
-				{ id: bankId, shareCode },
+				{ id: bankId, shareCode: currentShareCode },
 				newShareCode,
 			);
 			if (!result.ok) {
@@ -235,6 +236,7 @@ export function BankViewer({
 				description: "Share code updated successfully!",
 			});
 
+			setCurrentShareCode(result.shareCode);
 			setNewShareCode(result.shareCode);
 		} catch (error) {
 			console.error("Error changing share code:", error);
