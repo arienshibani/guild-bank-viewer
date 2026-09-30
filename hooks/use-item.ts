@@ -15,13 +15,15 @@ export function useItem(
 	gameMode?: GameMode,
 	{ enabled = true }: UseItemOptions = {},
 ) {
-	const [item, setItem] = useState<ItemData | null>(null);
+	const [loaded, setLoaded] = useState<{ id: number; data: ItemData } | null>(
+		null,
+	);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
 		if (!itemId) {
-			setItem(null);
+			setLoaded(null);
 			return;
 		}
 		if (!enabled) return;
@@ -30,7 +32,7 @@ export function useItem(
 		setIsLoading(true);
 		setError(null);
 		lookupItem(itemId, gameMode)
-			.then((data) => !cancelled && setItem(data))
+			.then((data) => !cancelled && setLoaded({ id: itemId, data }))
 			.catch(() => !cancelled && setError("Failed to load item data"))
 			.finally(() => !cancelled && setIsLoading(false));
 
@@ -39,5 +41,7 @@ export function useItem(
 		};
 	}, [itemId, gameMode, enabled]);
 
+	// Never expose data that belongs to a previous itemId.
+	const item = loaded && loaded.id === itemId ? loaded.data : null;
 	return { item, isLoading, error };
 }
