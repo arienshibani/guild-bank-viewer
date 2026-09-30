@@ -1,5 +1,6 @@
 "use client";
 
+import { useDndContext, useDraggable, useDroppable } from "@dnd-kit/core";
 import Image from "next/image";
 import { useState } from "react";
 import { useItem } from "@/hooks/use-item";
@@ -63,8 +64,32 @@ export function BankSlot({
 	const itemQuality = item ? item.quality || 0 : null;
 	const itemIconName = item?.iconName ?? null;
 
+	const { active } = useDndContext();
+	const {
+		attributes,
+		listeners,
+		setNodeRef: setDragRef,
+		transform,
+		isDragging,
+	} = useDraggable({ id: slotNumber, disabled: !isEditMode || !hasItem });
+	const { setNodeRef: setDropRef, isOver } = useDroppable({
+		id: slotNumber,
+		disabled: !isEditMode,
+	});
+
 	const slotContent = (
 		<button
+			{...attributes}
+			{...listeners}
+			ref={(node) => {
+				setDragRef(node);
+				setDropRef(node);
+			}}
+			style={
+				transform
+					? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
+					: undefined
+			}
 			type="button"
 			onClick={() => onSlotClick(slotNumber)}
 			onMouseEnter={() => setIsHovered(true)}
@@ -80,6 +105,10 @@ export function BankSlot({
 					? hoverBorders[itemQuality] || "hover:border-white/80"
 					: "hover:border-white/80",
 				isEditMode && "cursor-pointer",
+				isEditMode && hasItem && "cursor-grab touch-manipulation",
+				isDragging &&
+					"z-50 cursor-grabbing opacity-90 shadow-2xl transition-none",
+				isOver && !isDragging && "ring-2 ring-amber-400",
 				!isEditMode && !hasItem && "cursor-default",
 				// Hover shadow based on item quality or white for empty slots
 				isHovered && "shadow-lg",
@@ -97,7 +126,8 @@ export function BankSlot({
 								: `https://wow.zamimg.com/images/wow/icons/large/${itemId}.jpg`
 						}
 						alt={`Item ${itemId}`}
-						className="w-full h-full rounded object-cover"
+						draggable={false}
+						className="w-full h-full rounded object-cover pointer-events-none"
 						width={40}
 						height={40}
 						onError={(e) => {
@@ -120,7 +150,8 @@ export function BankSlot({
 		</button>
 	);
 
-	if (hasItem && itemId) {
+	// No hover tooltip while an item is being dragged.
+	if (hasItem && itemId && !active) {
 		return (
 			<ItemTooltip itemId={itemId} gameMode={gameMode}>
 				{slotContent}

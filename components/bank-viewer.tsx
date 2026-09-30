@@ -237,6 +237,7 @@ export function BankViewer({
 					items={items}
 					isEditMode={session.canEdit}
 					onSlotClick={handleSlotClick}
+					onMoveItem={session.moveItem}
 					gameMode={gameMode}
 				/>
 

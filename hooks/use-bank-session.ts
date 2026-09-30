@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { type BankItem, mergeItems, setSlot } from "@/lib/bank-items";
+import {
+	type BankItem,
+	mergeItems,
+	moveItem,
+	setSlot,
+} from "@/lib/bank-items";
 import { createBrowserBankService } from "@/lib/bank-service.client";
 import {
 	canEdit,
@@ -67,6 +72,8 @@ export function useBankSession(initial: InitialBank) {
 		},
 		setItem: (slot: number, itemId: number | null, quantity: number) =>
 			setItems((current) => setSlot(current, slot, itemId, quantity)),
+		moveItem: (from: number, to: number) =>
+			setItems((current) => moveItem(current, from, to)),
 		importItems: (incoming: BankItem[]) =>
 			setItems((current) => mergeItems(current, incoming)),
 
