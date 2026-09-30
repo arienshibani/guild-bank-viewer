@@ -253,6 +253,7 @@ export default function NewBankPage() {
 				slotNumber={editingSlot ?? 0}
 				currentItemId={currentItem?.item_id}
 				currentQuantity={currentItem?.quantity}
+				gameMode={gameMode}
 				onSave={handleSaveItem}
 			/>
 		</main>
