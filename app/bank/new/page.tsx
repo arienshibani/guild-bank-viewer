@@ -20,8 +20,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { type BankItem, setSlot } from "@/lib/bank-items";
-import { hashPassword } from "@/lib/password";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserBankService } from "@/lib/bank-service.client";
 import {
 	DEFAULT_GAME_MODE,
 	GAME_MODE_LABELS,
@@ -73,66 +72,24 @@ export default function NewBankPage() {
 	};
 
 	const handleSaveBank = async () => {
-		// Validate password
-		if (!password.trim()) {
-			setPasswordError("Password is required to create a bank");
-			return;
-		}
-
-		// Clear any previous errors
 		setPasswordError("");
 		setIsSaving(true);
 		try {
-			const supabase = createClient();
-
-			// Generate a random share code
-			const shareCode = Math.random().toString(36).substring(2, 10);
-
-			// Hash the password
-			const passwordHash = hashPassword(password);
-
-			// Create the guild bank
-			const { data: bankData, error: bankError } = await supabase
-				.from("guild_banks")
-				.insert({
-					name: bankName,
-					share_code: shareCode,
-					password_hash: passwordHash,
-					admin_notes: adminNotes,
-					game_mode: gameMode,
-					gold,
-					silver,
-					copper,
-				})
-				.select()
-				.single();
-
-			if (bankError) throw bankError;
-
-			// Insert all items
-			if (items.length > 0) {
-				const itemsToInsert = items.map((item) => ({
-					guild_bank_id: bankData.id,
-					slot_number: item.slot_number,
-					item_id: item.item_id,
-					quantity: item.quantity,
-				}));
-
-				const { error: itemsError } = await supabase
-					.from("bank_items")
-					.insert(itemsToInsert);
-
-				if (itemsError) throw itemsError;
+			const result = await createBrowserBankService().create(
+				{ name: bankName, adminNotes, gold, silver, copper, gameMode, items },
+				password,
+			);
+			if (!result.ok) {
+				setPasswordError(result.error);
+				return;
 			}
 
-			// Show success toast with vault ID
 			toast({
 				title: "Vault Created Successfully!",
-				description: `Your vault ID is: ${shareCode}`,
+				description: `Your vault ID is: ${result.shareCode}`,
 			});
 
-			// Redirect to the bank view page
-			router.push(`/bank/${shareCode}`);
+			router.push(`/bank/${result.shareCode}`);
 		} catch (error) {
 			console.error("Error saving bank:", error);
 			toast({
