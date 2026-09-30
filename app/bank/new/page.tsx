@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { type BankItem, setSlot } from "@/lib/bank-items";
 import { hashPassword } from "@/lib/password";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -27,12 +28,6 @@ import {
 	GAME_MODES,
 	type GameMode,
 } from "@/lib/types";
-
-interface BankItem {
-	slot_number: number;
-	item_id: number;
-	quantity: number;
-}
 
 export default function NewBankPage() {
 	const router = useRouter();
@@ -64,29 +59,7 @@ export default function NewBankPage() {
 		itemId: number | null,
 		quantity: number,
 	) => {
-		if (itemId === null) {
-			// Remove item
-			setItems(items.filter((item) => item.slot_number !== slotNumber));
-		} else {
-			// Add or update item
-			const existingIndex = items.findIndex(
-				(item) => item.slot_number === slotNumber,
-			);
-			if (existingIndex >= 0) {
-				const newItems = [...items];
-				newItems[existingIndex] = {
-					slot_number: slotNumber,
-					item_id: itemId,
-					quantity,
-				};
-				setItems(newItems);
-			} else {
-				setItems([
-					...items,
-					{ slot_number: slotNumber, item_id: itemId, quantity },
-				]);
-			}
-		}
+		setItems(setSlot(items, slotNumber, itemId, quantity));
 	};
 
 	const handleMoneyChange = (

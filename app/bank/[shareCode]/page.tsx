@@ -3,14 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BankViewer } from "@/components/bank-viewer";
 import { Button } from "@/components/ui/button";
+import type { BankItem } from "@/lib/bank-items";
 import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_GAME_MODE, type GameMode } from "@/lib/types";
-
-interface BankItem {
-	slot_number: number;
-	item_id: number;
-	quantity: number;
-}
 
 interface GuildBank {
 	id: string;

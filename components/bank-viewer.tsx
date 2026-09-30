@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { type BankItem, mergeItems, setSlot } from "@/lib/bank-items";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -25,12 +26,6 @@ import { BankGrid } from "./bank-grid";
 import { ImportDialog } from "./import-dialog";
 import { ItemEditDialog } from "./item-edit-dialog";
 import { MoneyDisplay } from "./money-display";
-
-interface BankItem {
-	slot_number: number;
-	item_id: number;
-	quantity: number;
-}
 
 interface BankViewerProps {
 	bankId: string;
@@ -99,27 +94,7 @@ export function BankViewer({
 		itemId: number | null,
 		quantity: number,
 	) => {
-		if (itemId === null) {
-			setItems(items.filter((item) => item.slot_number !== slotNumber));
-		} else {
-			const existingIndex = items.findIndex(
-				(item) => item.slot_number === slotNumber,
-			);
-			if (existingIndex >= 0) {
-				const newItems = [...items];
-				newItems[existingIndex] = {
-					slot_number: slotNumber,
-					item_id: itemId,
-					quantity,
-				};
-				setItems(newItems);
-			} else {
-				setItems([
-					...items,
-					{ slot_number: slotNumber, item_id: itemId, quantity },
-				]);
-			}
-		}
+		setItems(setSlot(items, slotNumber, itemId, quantity));
 	};
 
 	const handleMoneyChange = (
@@ -276,24 +251,7 @@ export function BankViewer({
 	};
 
 	const handleImportItems = (importedItems: BankItem[]) => {
-		// Merge imported items with existing items, replacing any conflicts
-		const newItems = [...items];
-
-		importedItems.forEach((importedItem) => {
-			const existingIndex = newItems.findIndex(
-				(item) => item.slot_number === importedItem.slot_number,
-			);
-
-			if (existingIndex >= 0) {
-				// Replace existing item
-				newItems[existingIndex] = importedItem;
-			} else {
-				// Add new item
-				newItems.push(importedItem);
-			}
-		});
-
-		setItems(newItems);
+		setItems(mergeItems(items, importedItems));
 	};
 
 	const validateShareCode = (code: string): string | null => {

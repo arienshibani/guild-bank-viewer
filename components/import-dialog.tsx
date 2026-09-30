@@ -14,12 +14,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-
-interface BankItem {
-	slot_number: number;
-	item_id: number;
-	quantity: number;
-}
+import { type BankItem, exportItems, parseImport } from "@/lib/bank-items";
 
 interface ImportDialogProps {
 	open: boolean;
@@ -41,50 +36,6 @@ export function ImportDialog({
 	const { toast } = useToast();
 	const textareaId = useId();
 
-	const validateImportData = (
-		data: string,
-	): { isValid: boolean; error?: string; items?: BankItem[] } => {
-		if (!data.trim()) {
-			return { isValid: false, error: "Please enter import data" };
-		}
-
-		try {
-			// Decode base64 string
-			const decodedString = atob(data.trim());
-
-			// Parse JSON
-			const parsedData = JSON.parse(decodedString);
-
-			// Validate data structure
-			if (!Array.isArray(parsedData)) {
-				return { isValid: false, error: "Invalid data string" };
-			}
-
-			// Validate each item has required properties
-			const validItems = parsedData.filter((item: unknown) => {
-				return (
-					typeof item === "object" &&
-					item !== null &&
-					typeof (item as BankItem).slot_number === "number" &&
-					typeof (item as BankItem).item_id === "number" &&
-					typeof (item as BankItem).quantity === "number" &&
-					(item as BankItem).slot_number >= 0 &&
-					(item as BankItem).slot_number < 100 && // Assuming max 100 slots
-					(item as BankItem).item_id > 0 &&
-					(item as BankItem).quantity > 0
-				);
-			}) as BankItem[];
-
-			if (validItems.length === 0) {
-				return { isValid: false, error: "Invalid data string" };
-			}
-
-			return { isValid: true, items: validItems };
-		} catch {
-			return { isValid: false, error: "Invalid data string" };
-		}
-	};
-
 	const handleDataChange = (value: string) => {
 		setImportData(value);
 
@@ -94,11 +45,9 @@ export function ImportDialog({
 			return;
 		}
 
-		const validation = validateImportData(value);
-		setValidationError(
-			validation.isValid ? null : validation.error || "Invalid data string",
-		);
-		setIsValidData(validation.isValid);
+		const result = parseImport(value);
+		setValidationError(result.ok ? null : result.error);
+		setIsValidData(result.ok);
 	};
 
 	const handleImport = async () => {
@@ -113,17 +62,14 @@ export function ImportDialog({
 
 		setIsImporting(true);
 		try {
-			const validation = validateImportData(importData);
-			if (!validation.isValid || !validation.items) {
-				throw new Error("Invalid data string");
-			}
+			const result = parseImport(importData);
+			if (!result.ok) throw new Error(result.error);
 
-			// Import the items
-			onImport(validation.items);
+			onImport(result.items);
 
 			toast({
 				title: "Success",
-				description: `Successfully imported ${validation.items.length} items`,
+				description: `Successfully imported ${result.items.length} items`,
 			});
 
 			// Clear the input and close dialog
@@ -151,9 +97,7 @@ export function ImportDialog({
 
 	const handleExport = async () => {
 		try {
-			// Serialize current items and encode to base64
-			const json = JSON.stringify(items);
-			const encoded = btoa(json);
+			const encoded = exportItems(items);
 
 			// Fill textarea and validate
 			handleDataChange(encoded);
