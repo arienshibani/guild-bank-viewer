@@ -453,6 +453,7 @@ export function BankViewer({
 				slotNumber={editingSlot ?? 0}
 				currentItemId={currentItem?.item_id}
 				currentQuantity={currentItem?.quantity}
+				gameMode={gameMode}
 				onSave={session.setItem}
 			/>
 
