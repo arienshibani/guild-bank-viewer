@@ -12,9 +12,8 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { hashPassword, verifyPassword } from "@/lib/password";
-import { createClient } from "@/lib/supabase/client";
+import { useBankSession } from "@/hooks/use-bank-session";
+import type { BankItem } from "@/lib/bank-items";
 import {
 	DEFAULT_GAME_MODE,
 	GAME_MODE_LABELS,
@@ -25,12 +24,6 @@ import { BankGrid } from "./bank-grid";
 import { ImportDialog } from "./import-dialog";
 import { ItemEditDialog } from "./item-edit-dialog";
 import { MoneyDisplay } from "./money-display";
-
-interface BankItem {
-	slot_number: number;
-	item_id: number;
-	quantity: number;
-}
 
 interface BankViewerProps {
 	bankId: string;
@@ -57,138 +50,44 @@ export function BankViewer({
 	initialCopper = 0,
 	initialGameMode = DEFAULT_GAME_MODE,
 }: BankViewerProps) {
-	const [items, setItems] = useState<BankItem[]>(initialItems);
-	const [name, setName] = useState(bankName);
-	const [gold, setGold] = useState(initialGold);
-	const [silver, setSilver] = useState(initialSilver);
-	const [copper, setCopper] = useState(initialCopper);
-	const [adminNotes, setAdminNotes] = useState(initialAdminNotes);
-	const [gameMode, setGameMode] = useState<GameMode>(initialGameMode);
-	const [isEditMode, setIsEditMode] = useState(false);
+	const session = useBankSession({
+		bankId,
+		shareCode,
+		passwordHash,
+		items: initialItems,
+		name: bankName,
+		adminNotes: initialAdminNotes,
+		gold: initialGold,
+		silver: initialSilver,
+		copper: initialCopper,
+		gameMode: initialGameMode,
+	});
+	const { items, name, adminNotes, gold, silver, copper, gameMode, isSaving } =
+		session;
+	const { setName, setAdminNotes, setGameMode } = session;
+	const { isUnlocked, isEditMode, showPasswordPrompt, unlockError } =
+		session.access;
+
 	const [editingSlot, setEditingSlot] = useState<number | null>(null);
-	const [isSaving, setIsSaving] = useState(false);
 	const [copied, setCopied] = useState(false);
 	const [password, setPassword] = useState("");
-	const [isUnlocked, setIsUnlocked] = useState(false);
-	const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
 	const [newPassword, setNewPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [showPasswordChange, setShowPasswordChange] = useState(false);
 	const [passwordError, setPasswordError] = useState("");
 	const [isChangingPassword, setIsChangingPassword] = useState(false);
-	const [unlockError, setUnlockError] = useState("");
 	const [showImportDialog, setShowImportDialog] = useState(false);
 	const [newShareCode, setNewShareCode] = useState(shareCode);
 	const [shareCodeError, setShareCodeError] = useState("");
 	const [isChangingShareCode, setIsChangingShareCode] = useState(false);
-	const { toast } = useToast();
 
 	const shareUrl =
 		typeof window !== "undefined"
-			? `${window.location.origin}/bank/${newShareCode}`
+			? `${window.location.origin}/bank/${session.shareCode}`
 			: "";
 
 	const handleSlotClick = (slotNumber: number) => {
-		if (isEditMode && isUnlocked) {
-			setEditingSlot(slotNumber);
-		}
-	};
-
-	const handleSaveItem = (
-		slotNumber: number,
-		itemId: number | null,
-		quantity: number,
-	) => {
-		if (itemId === null) {
-			setItems(items.filter((item) => item.slot_number !== slotNumber));
-		} else {
-			const existingIndex = items.findIndex(
-				(item) => item.slot_number === slotNumber,
-			);
-			if (existingIndex >= 0) {
-				const newItems = [...items];
-				newItems[existingIndex] = {
-					slot_number: slotNumber,
-					item_id: itemId,
-					quantity,
-				};
-				setItems(newItems);
-			} else {
-				setItems([
-					...items,
-					{ slot_number: slotNumber, item_id: itemId, quantity },
-				]);
-			}
-		}
-	};
-
-	const handleMoneyChange = (
-		newGold: number,
-		newSilver: number,
-		newCopper: number,
-	) => {
-		setGold(newGold);
-		setSilver(newSilver);
-		setCopper(newCopper);
-	};
-
-	const handleSaveChanges = async () => {
-		if (!isUnlocked) return;
-
-		setIsSaving(true);
-		try {
-			const supabase = createClient();
-
-			// Update guild bank money and admin notes
-			const { error: moneyError } = await supabase
-				.from("guild_banks")
-				.update({
-					name,
-					gold,
-					silver,
-					copper,
-					admin_notes: adminNotes,
-					game_mode: gameMode,
-					updated_at: new Date().toISOString(),
-				})
-				.eq("id", bankId);
-
-			if (moneyError) throw moneyError;
-
-			// Delete all existing items for this bank
-			await supabase.from("bank_items").delete().eq("guild_bank_id", bankId);
-
-			// Insert updated items
-			if (items.length > 0) {
-				const itemsToInsert = items.map((item) => ({
-					guild_bank_id: bankId,
-					slot_number: item.slot_number,
-					item_id: item.item_id,
-					quantity: item.quantity,
-				}));
-
-				const { error } = await supabase
-					.from("bank_items")
-					.insert(itemsToInsert);
-
-				if (error) throw error;
-			}
-
-			toast({
-				title: "Success",
-				description: "Bank updated successfully!",
-			});
-			setIsEditMode(false);
-		} catch (error) {
-			console.error("Error saving changes:", error);
-			toast({
-				title: "Error",
-				description: "Failed to save changes. Please try again.",
-				variant: "destructive",
-			});
-		} finally {
-			setIsSaving(false);
-		}
+		if (session.canEdit) setEditingSlot(slotNumber);
 	};
 
 	const handleCopyLink = () => {
@@ -198,181 +97,34 @@ export function BankViewer({
 	};
 
 	const handleUnlock = () => {
-		// Clear any previous errors
-		setUnlockError("");
-
-		// Verify password against stored hash
-		if (verifyPassword(password, passwordHash)) {
-			setIsUnlocked(true);
-			setShowPasswordPrompt(false);
-			setIsEditMode(true);
-			setPassword(""); // Clear password on success
-		} else {
-			setUnlockError("Incorrect password");
-			setPassword(""); // Clear password on failure
-			toast({
-				title: "",
-				description: "Incorrect password",
-				variant: "destructive",
-			});
-		}
-	};
-
-	const handleEditModeToggle = () => {
-		if (!isEditMode && !isUnlocked) {
-			setShowPasswordPrompt(true);
-			setUnlockError(""); // Clear any previous errors when opening prompt
-		} else {
-			setIsEditMode(!isEditMode);
-		}
+		session.unlock(password);
+		setPassword("");
 	};
 
 	const handleChangePassword = async () => {
-		// Validate passwords
-		if (!newPassword.trim()) {
-			setPasswordError("New password is required");
-			return;
-		}
-		if (newPassword !== confirmPassword) {
-			setPasswordError("Passwords do not match");
-			return;
-		}
-		if (newPassword.length < 3) {
-			setPasswordError("Password must be at least 3 characters");
-			return;
-		}
-
 		setPasswordError("");
 		setIsChangingPassword(true);
-
-		try {
-			const supabase = createClient();
-			const newPasswordHash = hashPassword(newPassword);
-
-			const { error } = await supabase
-				.from("guild_banks")
-				.update({ password_hash: newPasswordHash })
-				.eq("id", bankId);
-
-			if (error) throw error;
-
-			toast({
-				title: "Success",
-				description: "Password changed successfully!",
-			});
-			setShowPasswordChange(false);
-			setNewPassword("");
-			setConfirmPassword("");
-		} catch (error) {
-			console.error("Error changing password:", error);
-			toast({
-				title: "Error",
-				description: "Failed to change password. Please try again.",
-				variant: "destructive",
-			});
-		} finally {
-			setIsChangingPassword(false);
+		const error = await session.changePassword(newPassword, confirmPassword);
+		setIsChangingPassword(false);
+		if (error) {
+			setPasswordError(error);
+			return;
 		}
-	};
-
-	const handleImportItems = (importedItems: BankItem[]) => {
-		// Merge imported items with existing items, replacing any conflicts
-		const newItems = [...items];
-
-		importedItems.forEach((importedItem) => {
-			const existingIndex = newItems.findIndex(
-				(item) => item.slot_number === importedItem.slot_number,
-			);
-
-			if (existingIndex >= 0) {
-				// Replace existing item
-				newItems[existingIndex] = importedItem;
-			} else {
-				// Add new item
-				newItems.push(importedItem);
-			}
-		});
-
-		setItems(newItems);
-	};
-
-	const validateShareCode = (code: string): string | null => {
-		if (!code.trim()) {
-			return "Share code is required";
-		}
-		if (code.length > 30) {
-			return "Share code must be 30 characters or less";
-		}
-		if (!/^[a-zA-Z0-9_-]+$/.test(code)) {
-			return "Share code must be URL-friendly (letters, numbers, hyphens, and underscores only)";
-		}
-		return null;
+		setShowPasswordChange(false);
+		setNewPassword("");
+		setConfirmPassword("");
 	};
 
 	const handleShareCodeChange = async () => {
-		const trimmedCode = newShareCode.trim();
-		const validationError = validateShareCode(trimmedCode);
-
-		if (validationError) {
-			setShareCodeError(validationError);
-			return;
-		}
-
-		if (trimmedCode === shareCode) {
-			setShareCodeError("");
-			return;
-		}
-
 		setShareCodeError("");
 		setIsChangingShareCode(true);
-
-		try {
-			const supabase = createClient();
-
-			// Check if the new share code is already taken
-			const { data: existingBank } = await supabase
-				.from("guild_banks")
-				.select("id")
-				.eq("share_code", trimmedCode)
-				.single();
-
-			if (existingBank) {
-				setShareCodeError(
-					"This share code is already taken. Please choose a different one.",
-				);
-				return;
-			}
-
-			// Update the share code in the database
-			const { error } = await supabase
-				.from("guild_banks")
-				.update({ share_code: trimmedCode })
-				.eq("id", bankId);
-
-			if (error) throw error;
-
-			// Update the URL in the browser
-			if (typeof window !== "undefined") {
-				window.history.replaceState(null, "", `/bank/${trimmedCode}`);
-			}
-
-			toast({
-				title: "Success",
-				description: "Share code updated successfully!",
-			});
-
-			// Update the local state
-			setNewShareCode(trimmedCode);
-		} catch (error) {
-			console.error("Error changing share code:", error);
-			toast({
-				title: "Error",
-				description: "Failed to change share code. Please try again.",
-				variant: "destructive",
-			});
-		} finally {
-			setIsChangingShareCode(false);
+		const error = await session.changeShareCode(newShareCode);
+		setIsChangingShareCode(false);
+		if (error) {
+			setShareCodeError(error);
+			return;
 		}
+		setNewShareCode((code) => code.trim());
 	};
 
 	const currentItem = items.find((item) => item.slot_number === editingSlot);
@@ -409,7 +161,7 @@ export function BankViewer({
 						<span className="sm:hidden">{copied ? "✓" : "Share"}</span>
 					</Button>
 
-					{isEditMode && isUnlocked && (
+					{session.canEdit && (
 						<Button
 							onClick={() => setShowImportDialog(true)}
 							variant="outline"
@@ -423,7 +175,7 @@ export function BankViewer({
 					)}
 
 					<Button
-						onClick={handleEditModeToggle}
+						onClick={session.toggleEditMode}
 						variant="outline"
 						size="sm"
 						className="border-stone-700 text-stone-300 hover:bg-stone-800 bg-transparent text-xs sm:text-sm"
@@ -446,7 +198,7 @@ export function BankViewer({
 							value={password}
 							onChange={(e) => {
 								setPassword(e.target.value);
-								if (unlockError) setUnlockError(""); // Clear error when typing
+								if (unlockError) session.clearUnlockError();
 							}}
 							onKeyDown={(e) => e.key === "Enter" && handleUnlock()}
 							placeholder="Enter password"
@@ -464,8 +216,7 @@ export function BankViewer({
 						</Button>
 						<Button
 							onClick={() => {
-								setShowPasswordPrompt(false);
-								setUnlockError("");
+								session.cancelUnlock();
 								setPassword("");
 							}}
 							variant="outline"
@@ -484,7 +235,7 @@ export function BankViewer({
 			<div className="space-y-3 sm:space-y-4">
 				<BankGrid
 					items={items}
-					isEditMode={isEditMode && isUnlocked}
+					isEditMode={session.canEdit}
 					onSlotClick={handleSlotClick}
 					gameMode={gameMode}
 				/>
@@ -494,8 +245,8 @@ export function BankViewer({
 						gold={gold}
 						silver={silver}
 						copper={copper}
-						isEditable={isEditMode && isUnlocked}
-						onMoneyChange={handleMoneyChange}
+						isEditable={session.canEdit}
+						onMoneyChange={session.setMoney}
 					/>
 				</div>
 
@@ -508,7 +259,7 @@ export function BankViewer({
 					</div>
 				)}
 
-				{isEditMode && isUnlocked && (
+				{session.canEdit && (
 					<div className="space-y-4">
 						{/* Horizontal layout for larger screens */}
 						<div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
@@ -682,10 +433,10 @@ export function BankViewer({
 				)}
 			</div>
 
-			{isEditMode && isUnlocked && (
+			{session.canEdit && (
 				<div className="flex justify-end">
 					<Button
-						onClick={handleSaveChanges}
+						onClick={session.save}
 						disabled={isSaving}
 						size="lg"
 						className="bg-amber-600 hover:bg-amber-700 text-white"
@@ -702,13 +453,13 @@ export function BankViewer({
 				slotNumber={editingSlot ?? 0}
 				currentItemId={currentItem?.item_id}
 				currentQuantity={currentItem?.quantity}
-				onSave={handleSaveItem}
+				onSave={session.setItem}
 			/>
 
 			<ImportDialog
 				open={showImportDialog}
 				onOpenChange={setShowImportDialog}
-				onImport={handleImportItems}
+				onImport={session.importItems}
 				items={items}
 			/>
 		</div>

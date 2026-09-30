@@ -1,14 +1,9 @@
 "use client";
 
+import { type BankItem, SLOT_COUNT } from "@/lib/bank-items";
 import type { GameMode } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { BankSlot } from "./bank-slot";
-
-interface BankItem {
-	slot_number: number;
-	item_id: number;
-	quantity: number;
-}
 
 interface BankGridProps {
 	items: BankItem[];
@@ -26,8 +21,7 @@ export function BankGrid({
 	// Create a map of slot number to item for quick lookup
 	const itemMap = new Map(items.map((item) => [item.slot_number, item]));
 
-	// Generate 28 slots
-	const slots = Array.from({ length: 28 }, (_, i) => {
+	const slots = Array.from({ length: SLOT_COUNT }, (_, i) => {
 		const item = itemMap.get(i);
 		return {
 			slotNumber: i,

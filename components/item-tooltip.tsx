@@ -4,20 +4,8 @@
 import { Loader2 } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
+import { useItem } from "@/hooks/use-item";
 import type { GameMode } from "@/lib/types";
-
-interface ItemData {
-	name: string;
-	quality: number;
-	level?: number;
-	classs?: string;
-	subclass?: string;
-	icon?: string;
-	description?: string;
-	stats?: string[];
-	salePrice?: { gold: number; silver: number; copper: number };
-	category?: string;
-}
 
 interface ItemTooltipProps {
 	itemId: number;
@@ -110,10 +98,12 @@ function processTooltipHTML(html: string): string {
 }
 
 export function ItemTooltip({ itemId, children, gameMode }: ItemTooltipProps) {
-	const [itemData, setItemData] = useState<ItemData | null>(null);
-	const [isLoading, setIsLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	const [showTooltip, setShowTooltip] = useState(false);
+	const {
+		item: itemData,
+		isLoading,
+		error,
+	} = useItem(itemId, gameMode, { enabled: showTooltip });
 	const [tooltipPosition, setTooltipPosition] = useState<{
 		top: boolean;
 		left: boolean;
@@ -168,37 +158,6 @@ export function ItemTooltip({ itemId, children, gameMode }: ItemTooltipProps) {
 
 		setTooltipPosition({ top, left, transform });
 	}, [showTooltip, isClient]);
-
-	useEffect(() => {
-		if (!showTooltip || !itemId) return;
-
-		const fetchItemData = async () => {
-			setIsLoading(true);
-			setError(null);
-
-			try {
-				// Use our API route to fetch item data with game mode parameter
-				const gameModeParam = gameMode
-					? `?gameMode=${encodeURIComponent(gameMode)}`
-					: "";
-				const response = await fetch(`/api/item/${itemId}${gameModeParam}`);
-
-				if (!response.ok) {
-					throw new Error("Failed to fetch item data");
-				}
-
-				const data = await response.json();
-				setItemData(data);
-			} catch (err) {
-				console.error("Error fetching item data:", err);
-				setError("Failed to load item data");
-			} finally {
-				setIsLoading(false);
-			}
-		};
-
-		fetchItemData();
-	}, [itemId, showTooltip, gameMode]);
 
 	return (
 		<div className="relative inline-block">

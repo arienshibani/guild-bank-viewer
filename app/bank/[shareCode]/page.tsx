@@ -3,27 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BankViewer } from "@/components/bank-viewer";
 import { Button } from "@/components/ui/button";
+import { createBankService } from "@/lib/bank-service";
+import { supabaseBankStore } from "@/lib/bank-store.supabase";
 import { createClient } from "@/lib/supabase/server";
-import { DEFAULT_GAME_MODE, type GameMode } from "@/lib/types";
-
-interface BankItem {
-	slot_number: number;
-	item_id: number;
-	quantity: number;
-}
-
-interface GuildBank {
-	id: string;
-	name: string;
-	share_code: string;
-	password_hash: string;
-	admin_notes: string;
-	game_mode: GameMode;
-	created_at: string;
-	gold: number;
-	silver: number;
-	copper: number;
-}
+import { DEFAULT_GAME_MODE } from "@/lib/types";
 
 export default async function BankViewPage({
 	params,
@@ -31,29 +14,13 @@ export default async function BankViewPage({
 	params: Promise<{ shareCode: string }>;
 }) {
 	const { shareCode } = await params;
-	const supabase = await createClient();
+	const bank = await createBankService(
+		supabaseBankStore(await createClient(), DEFAULT_GAME_MODE),
+	).load(shareCode);
 
-	// Fetch the guild bank
-	const { data: bankData, error: bankError } = await supabase
-		.from("guild_banks")
-		.select("*")
-		.eq("share_code", shareCode)
-		.single();
-
-	if (bankError || !bankData) {
+	if (!bank) {
 		notFound();
 	}
-
-	const bank = bankData as GuildBank;
-
-	// Fetch all items for this bank
-	const { data: itemsData } = await supabase
-		.from("bank_items")
-		.select("*")
-		.eq("guild_bank_id", bank.id)
-		.order("slot_number");
-
-	const items = (itemsData as BankItem[]) || [];
 
 	return (
 		<main className="min-h-screen bg-gradient-to-b from-stone-900 to-stone-950 p-8">
@@ -75,14 +42,14 @@ export default async function BankViewPage({
 				<BankViewer
 					bankId={bank.id}
 					shareCode={shareCode}
-					initialItems={items}
+					initialItems={bank.items}
 					bankName={bank.name}
-					passwordHash={bank.password_hash}
-					initialAdminNotes={bank.admin_notes || ""}
-					initialGold={bank.gold || 0}
-					initialSilver={bank.silver || 0}
-					initialCopper={bank.copper || 0}
-					initialGameMode={(bank.game_mode as GameMode) || DEFAULT_GAME_MODE}
+					passwordHash={bank.passwordHash}
+					initialAdminNotes={bank.adminNotes}
+					initialGold={bank.gold}
+					initialSilver={bank.silver}
+					initialCopper={bank.copper}
+					initialGameMode={bank.gameMode}
 				/>
 			</div>
 		</main>
