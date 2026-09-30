@@ -21,6 +21,7 @@ export function tooltipUrl(itemId: string | number, gameMode: GameMode): string 
 		case "wotlk":
 		case "cata":
 		case "mop-classic":
+		case "forever":
 			return `https://nether.wowhead.com/${gameMode}/tooltip/item/${itemId}?json`;
 		default:
 			return `https://nether.wowhead.com/tooltip/item/${itemId}?json`;

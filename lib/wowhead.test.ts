@@ -11,6 +11,9 @@ describe("tooltipUrl", () => {
 		expect(tooltipUrl("1", "mop-classic")).toContain(
 			"/mop-classic/tooltip/item/1",
 		);
+		expect(tooltipUrl(277288, "forever")).toBe(
+			"https://nether.wowhead.com/forever/tooltip/item/277288?json",
+		);
 	});
 	it("uses the unprefixed endpoint for retail", () => {
 		expect(tooltipUrl(19019, "retail")).toBe(
