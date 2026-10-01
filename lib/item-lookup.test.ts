@@ -32,3 +32,16 @@ describe("createItemLookup", () => {
 		expect(fetcher).toHaveBeenCalledTimes(2);
 	});
 });
+
+describe("createItemLookup 404 handling", () => {
+	it("rejects with ItemNotFoundError on a 404 and does not cache it", async () => {
+		const { ItemNotFoundError } = await import("./item-lookup");
+		const fetcher = vi
+			.fn()
+			.mockResolvedValueOnce(new Response("", { status: 404 }))
+			.mockResolvedValueOnce(ok({ name: "A" }));
+		const lookup = createItemLookup(fetcher);
+		await expect(lookup(1, "classic")).rejects.toBeInstanceOf(ItemNotFoundError);
+		await expect(lookup(1, "classic")).resolves.toMatchObject({ name: "A" });
+	});
+});

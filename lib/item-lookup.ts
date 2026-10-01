@@ -1,6 +1,14 @@
 import type { GameMode } from "@/lib/types";
 import type { ItemData } from "@/lib/wowhead";
 
+/** The item does not exist in the requested game mode's database. */
+export class ItemNotFoundError extends Error {
+	constructor(itemId: number) {
+		super(`Item ${itemId} not found`);
+		this.name = "ItemNotFoundError";
+	}
+}
+
 export type ItemFetcher = (url: string) => Promise<Response>;
 
 /**
@@ -21,6 +29,7 @@ export function createItemLookup(fetcher: ItemFetcher = (url) => fetch(url)) {
 		const query = gameMode ? `?gameMode=${encodeURIComponent(gameMode)}` : "";
 		const request = fetcher(`/api/item/${itemId}${query}`)
 			.then((response) => {
+				if (response.status === 404) throw new ItemNotFoundError(itemId);
 				if (!response.ok) throw new Error("Failed to fetch item data");
 				return response.json() as Promise<ItemData>;
 			})
