@@ -14,17 +14,67 @@ export interface ItemData {
 	category: string;
 }
 
-/** Wowhead tooltip endpoint for an item in the given game mode. Unknown modes fall back to retail. */
-export function tooltipUrl(itemId: string | number, gameMode: GameMode): string {
+/** Wowhead URL path segment for a game mode. Unknown modes fall back to retail (no segment). */
+function modeSegment(gameMode: GameMode): string {
 	switch (gameMode) {
 		case "classic":
 		case "wotlk":
 		case "cata":
 		case "mop-classic":
-			return `https://nether.wowhead.com/${gameMode}/tooltip/item/${itemId}?json`;
+		case "forever":
+			return `${gameMode}/`;
 		default:
-			return `https://nether.wowhead.com/tooltip/item/${itemId}?json`;
+			return "";
 	}
+}
+
+/** Wowhead tooltip endpoint for an item in the given game mode. */
+export function tooltipUrl(itemId: string | number, gameMode: GameMode): string {
+	return `https://nether.wowhead.com/${modeSegment(gameMode)}tooltip/item/${itemId}?json`;
+}
+
+export interface ItemSearchResult {
+	id: number;
+	name: string;
+	icon: string | null;
+	quality: number;
+	/** e.g. "One-Handed Axe" */
+	subtitle: string | null;
+}
+
+/** Wowhead search-suggestions endpoint, scoped to the game mode's item database. */
+export function searchUrl(query: string, gameMode: GameMode): string {
+	return `https://www.wowhead.com/${modeSegment(gameMode)}search/suggestions-template?q=${encodeURIComponent(query)}`;
+}
+
+const ITEM_RESULT_TYPE = 3;
+
+/** Keep only items from a Wowhead search-suggestions response. */
+export function parseSearchResults(data: unknown): ItemSearchResult[] {
+	const results = (data as { results?: unknown })?.results;
+	if (!Array.isArray(results)) return [];
+
+	return results
+		.filter(
+			(r): r is Record<string, unknown> =>
+				typeof r === "object" &&
+				r !== null &&
+				(r as { type?: unknown }).type === ITEM_RESULT_TYPE &&
+				typeof (r as { id?: unknown }).id === "number" &&
+				typeof (r as { name?: unknown }).name === "string",
+		)
+		.map((r) => ({
+			id: r.id as number,
+			name: r.name as string,
+			icon: (r.icon as string | undefined) || null,
+			quality: (r.quality as number | undefined) || 0,
+			subtitle:
+				(r.pinFooterText as string | undefined) ||
+				(Array.isArray(r.pinBreadcrumb)
+					? (r.pinBreadcrumb as string[]).join(" - ")
+					: null) ||
+				null,
+		}));
 }
 
 /** Turn a raw Wowhead tooltip response into the structured item data the app uses. */

@@ -1,5 +1,11 @@
 // Game mode types for World of Warcraft versions
-export type GameMode = "retail" | "classic" | "wotlk" | "cata" | "mop-classic";
+export type GameMode =
+	| "retail"
+	| "classic"
+	| "wotlk"
+	| "cata"
+	| "mop-classic"
+	| "forever";
 
 // Game mode display names for UI
 export const GAME_MODE_LABELS: Record<GameMode, string> = {
@@ -8,6 +14,7 @@ export const GAME_MODE_LABELS: Record<GameMode, string> = {
 	wotlk: "Wrath of the Lich King",
 	cata: "Cataclysm",
 	"mop-classic": "Mists of Pandaria",
+	forever: "Forever",
 } as const;
 
 // Default game mode
@@ -20,4 +27,5 @@ export const GAME_MODES: GameMode[] = [
 	"wotlk",
 	"cata",
 	"mop-classic",
+	"forever",
 ];
