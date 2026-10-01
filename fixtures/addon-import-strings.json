@@ -1,0 +1,61 @@
+[
+  {
+    "name": "empty",
+    "items": [],
+    "string": "W10="
+  },
+  {
+    "name": "single",
+    "items": [
+      {
+        "slot_number": 0,
+        "item_id": 19019,
+        "quantity": 1
+      }
+    ],
+    "string": "W3sic2xvdF9udW1iZXIiOjAsIml0ZW1faWQiOjE5MDE5LCJxdWFudGl0eSI6MX1d"
+  },
+  {
+    "name": "stacks_and_gaps",
+    "items": [
+      {
+        "slot_number": 1,
+        "item_id": 2589,
+        "quantity": 1232
+      },
+      {
+        "slot_number": 15,
+        "item_id": 19019,
+        "quantity": 1
+      },
+      {
+        "slot_number": 27,
+        "item_id": 6948,
+        "quantity": 20
+      }
+    ],
+    "string": "W3sic2xvdF9udW1iZXIiOjEsIml0ZW1faWQiOjI1ODksInF1YW50aXR5IjoxMjMyfSx7InNsb3RfbnVtYmVyIjoxNSwiaXRlbV9pZCI6MTkwMTksInF1YW50aXR5IjoxfSx7InNsb3RfbnVtYmVyIjoyNywiaXRlbV9pZCI6Njk0OCwicXVhbnRpdHkiOjIwfV0="
+  },
+  {
+    "name": "padding_one",
+    "items": [
+      {
+        "slot_number": 3,
+        "item_id": 5,
+        "quantity": 2
+      }
+    ],
+    "string": "W3sic2xvdF9udW1iZXIiOjMsIml0ZW1faWQiOjUsInF1YW50aXR5IjoyfV0="
+  },
+  {
+    "name": "padding_two",
+    "items": [
+      {
+        "slot_number": 3,
+        "item_id": 55,
+        "quantity": 2
+      }
+    ],
+    "string": "W3sic2xvdF9udW1iZXIiOjMsIml0ZW1faWQiOjU1LCJxdWFudGl0eSI6Mn1d"
+  }
+]
