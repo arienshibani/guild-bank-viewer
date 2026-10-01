@@ -28,6 +28,22 @@ export function setSlot(
 	return copy;
 }
 
+/** Drag an item from one slot to another: moves into an empty slot, swaps with an occupied one. */
+export function moveItem(
+	items: BankItem[],
+	from: number,
+	to: number,
+): BankItem[] {
+	if (from === to) return items;
+	const moving = items.find((item) => item.slot_number === from);
+	if (!moving) return items;
+	return items.map((item) => {
+		if (item === moving) return { ...item, slot_number: to };
+		if (item.slot_number === to) return { ...item, slot_number: from };
+		return item;
+	});
+}
+
 /** Merge incoming items into existing ones; incoming wins on slot conflicts. */
 export function mergeItems(
 	items: BankItem[],

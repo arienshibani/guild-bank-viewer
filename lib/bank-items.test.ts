@@ -3,6 +3,7 @@ import {
 	type BankItem,
 	exportItems,
 	mergeItems,
+	moveItem,
 	parseImport,
 	SLOT_COUNT,
 	setSlot,
@@ -71,5 +72,27 @@ describe("parseImport", () => {
 	});
 	it("fails when nothing valid remains", () => {
 		expect(parseImport(encode([item(SLOT_COUNT)])).ok).toBe(false);
+	});
+});
+
+describe("moveItem", () => {
+	it("moves an item into an empty slot", () => {
+		expect(moveItem([item(1, 5, 3)], 1, 9)).toEqual([item(9, 5, 3)]);
+	});
+	it("swaps two occupied slots, keeping quantities", () => {
+		const moved = moveItem([item(1, 5, 3), item(2, 6, 7)], 1, 2);
+		expect(moved).toContainEqual(item(2, 5, 3));
+		expect(moved).toContainEqual(item(1, 6, 7));
+		expect(moved).toHaveLength(2);
+	});
+	it("ignores a drag from an empty slot or onto itself", () => {
+		const items = [item(1)];
+		expect(moveItem(items, 4, 5)).toBe(items);
+		expect(moveItem(items, 1, 1)).toBe(items);
+	});
+	it("does not mutate its input", () => {
+		const items = [item(1), item(2, 9)];
+		moveItem(items, 1, 2);
+		expect(items).toEqual([item(1), item(2, 9)]);
 	});
 });
