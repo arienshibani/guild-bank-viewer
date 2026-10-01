@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { siGithub } from "simple-icons";
 import { BankGrid } from "@/components/bank-grid";
+import { CountUp } from "@/components/count-up";
 import { MoneyDisplay } from "@/components/money-display";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +58,9 @@ export default function Home() {
 		Array<{ slot_number: number; item_id: number; quantity: number }>
 	>([]);
 	const [isGridLoaded, setIsGridLoaded] = useState(false);
+	const [stats, setStats] = useState<{ banks: number; items: number } | null>(
+		null,
+	);
 	const router = useRouter();
 
 	// Load last entered bank code from localStorage
@@ -91,6 +95,16 @@ export default function Home() {
 			return () => clearTimeout(timer);
 		}
 	}, [exampleItems]);
+
+	// Fetch site stats; they stay hidden until the example grid has faded in.
+	useEffect(() => {
+		fetch("/api/stats")
+			.then((res) => (res.ok ? res.json() : null))
+			.then((data) => {
+				if (data) setStats(data);
+			})
+			.catch(() => {});
+	}, []);
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -196,11 +210,33 @@ export default function Home() {
 						/>
 					</div>
 
-					<div
-						className={`text-center mt-6 transition-opacity duration-1000 ${
-							isGridLoaded ? "opacity-100" : "opacity-0"
-						}`}
-					></div>
+					{/* Site stats, revealed after the example grid */}
+					{stats && (
+						<div
+							className={`flex flex-col sm:flex-row justify-center gap-10 sm:gap-20 text-center mt-24 transition-opacity duration-1000 ${
+								isGridLoaded ? "opacity-100" : "opacity-0"
+							}`}
+						>
+							<div>
+								<CountUp
+									to={stats.banks}
+									start={isGridLoaded}
+									className="block text-5xl font-bold text-amber-100 tabular-nums"
+								/>
+								<p className="mt-2 text-stone-400">
+									guild vaults have been created
+								</p>
+							</div>
+							<div>
+								<CountUp
+									to={stats.items}
+									start={isGridLoaded}
+									className="block text-5xl font-bold text-amber-100 tabular-nums"
+								/>
+								<p className="mt-2 text-stone-400">items currently stored</p>
+							</div>
+						</div>
+					)}
 				</div>
 			</div>
 
