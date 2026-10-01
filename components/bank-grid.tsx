@@ -62,7 +62,11 @@ export function BankGrid({
 			)}
 		>
 			<div className="absolute inset-0 bg-[url('/stone-texture.png')] opacity-5 rounded-lg" />
-			<DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+			<DndContext
+				sensors={sensors}
+				autoScroll={false}
+				onDragEnd={handleDragEnd}
+			>
 				<div className="relative grid grid-cols-4 sm:grid-cols-7 gap-1 sm:gap-2">
 					{slots.map((slot) => (
 						<BankSlot
