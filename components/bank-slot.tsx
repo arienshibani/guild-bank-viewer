@@ -81,6 +81,8 @@ export function BankSlot({
 		<button
 			{...attributes}
 			{...listeners}
+			// An empty slot is still clickable (to add an item); only dragging is off.
+			aria-disabled={undefined}
 			ref={(node) => {
 				setDragRef(node);
 				setDropRef(node);
